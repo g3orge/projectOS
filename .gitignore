@@ -1,3 +1,10 @@
+# Vim files
+*.swp
+
+# Compiled files
+a.out
+server
+
 # Compiled Object files
 *.slo
 *.lo
