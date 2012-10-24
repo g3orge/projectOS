@@ -16,10 +16,24 @@
 #define TIME_SPECIAL 15
 #define T_KONTA 5
 #define T_MAKRIA 10
-#define T_VERYLOG 50
+#define T_VERYLONG 50
 #define N_DIANOMEIS 10
 #define N_PSISTES 10
 #define N_MAXPIZZA 3
+
+/* Declaration of boolean type */
+typedef enum { false, true } bool;
+
+/* Struct for the pizza order */
+struct order {
+    short m_num = 0;
+    short p_num = 0;
+    short s_num = 0;
+    int time = 0;
+    bool status1=0;
+    bool status2=0;
+};
+typedef struct order order_t;
 
 /* A function to display an error message and then exit */
 void fatal(char *message) {
@@ -37,6 +51,18 @@ void *ec_malloc(unsigned int size) {
     return ptr;
 }
 
+void handler(int sig_num) {
+    /* handling the Signal of the client SIGUSR1 (10) */
+}
+
+void cook() {
+    /* Cooker function */
+}
+
+void deliverer() {
+    /* Delivery function */
+}
+
 int main() {
     /* Our process ID */
     pid_t pid;
@@ -52,11 +78,5 @@ int main() {
         exit(EXIT_SUCCESS);
     }
 
-    if (pid == 0) {
-        /* Child operates here */
-        sleep(2000);
-        fatal("I'm the child");
-        while (1) { /* nothing */ }
-    }
-    return 0;
+    /* Child operates here */
 }
