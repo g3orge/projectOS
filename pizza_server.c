@@ -37,6 +37,8 @@
 #define SHM_KEY "PiePizza"
 /* TODO: shared memory segment size */
 #define SHM_SIZE 4*1024
+#define QUEUE 5
+#define PATH "socketfile"
 
 /* Declaration of boolean type */
 typedef enum { false, true } bool;
@@ -81,7 +83,12 @@ void deliverer() {
 
 int main() {
     pid_t pid;
-    int sd, shm_id, i;
+    int sd, new_conn, shm_id, i;
+    int ord_len = sizeof(order_t);
+    char temp[ord_len];
+    /* unix socket address declarations and lengths */
+    sockaddr_un server_addr, client_addr;
+    socklet_t addr_len;
 
     /* Fork off the parent process to get into deamon mode */
     pid = fork();
@@ -109,10 +116,28 @@ int main() {
     }
 
     /* Socket business */
-    sd = socket(AF_UNIX, SOCK_STREAM, 0);
+    sd = socket(PF_UNIX, SOCK_STREAM, 0);
     if (sd == -1)
-        fatal("in socket creation");
+        fatal("while creating socket");
+    unlink(PATH);
+    /* socket internal information --- Maybe: AF_LOCAL */
+    server_addr.sun_family = AF_UNIX;
+    strcpy(server_addr.sun_path, PATH);
+    /* bind function call with typecasted arguments of server address */
+    if (bind (sd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+        fatal("while binding");
+    if (listen(sd, QUEUE) == -1)
+        fatal("while listening");
+    /* endless loop to get new connections */
+    while (1) {
+        addr_len = sizeof(struct sockaddr_un);
+        new_conn = accept(sd, (struct sockaddr *)&client_addr, &addr_len);
+        read(new_conn, &temp, sizeof(temp));
+        close(new_conn);
+        pid = fork()
+        if (pid == 0)
+            break;
+    }
 
-    /* fork(); */
-    /* Child operates here */
+    /* Child operates below */
 }
