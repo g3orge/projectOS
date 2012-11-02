@@ -127,10 +127,10 @@ int main() {
         fatal("while creating server's socket");
     unlink(PATH);
      /* Zero all fields of servaddr. */
-    bzero( &serv_addr, sizeof( serv_addr ) ); 
+    bzero(&server_addr, addr_len);
     /* socket internal information --- Maybe: AF_LOCAL */
     server_addr.sun_family = AF_UNIX;
-    /* Define the name of this socket. */   
+    /* Define the name of this socket */
     strcpy(server_addr.sun_path, PATH);
     /* bind function call with typecasted arguments of server address */
     /* third argument may need to be sizeof(server_addr) */
@@ -169,7 +169,7 @@ int main() {
     /* shm_start = shmat(shm_id, NULL, 0); */
 	
     /* get in the oven */
-    cook(order_list); 
+    cook(order_list);
     /* get gone */
     deliverer();
     
