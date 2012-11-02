@@ -24,7 +24,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/un.h>
-
+/* Pizza default values */ 
 #define TIME_MARGARITA 10
 #define TIME_PEPPERONI 12
 #define TIME_SPECIAL 15
@@ -34,8 +34,8 @@
 #define N_DIANOMEIS 10
 #define N_PSISTES 10
 #define N_MAXPIZZA 3
-
-#define SHM_KEY "PiePizza"
+/* System values: key(maybe a key_t?), pizza limit, listen queue */
+#define SHM_KEY 7942
 #define LIMIT 200
 #define QUEUE 5
 #define PATH "socketfile"
@@ -81,16 +81,17 @@ void deliverer() {
     /* Delivery function */
 }
 
-int main() {	
+int main() {
     pid_t pid;
-    int sd, new_conn; /* socket filedescriptors */
+    /* socket file descriptors */
+    int sd, new_conn;
     int shm_id, i;
+    /* calculating and initialising a buffer to get data from socket stream */
     int ord_len = sizeof(order_t);
     int temp[ord_len];
-    /* unix socketraddress declarations and lengths */
+    /* unix socket address declarations and lengths */
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len;
-    
     
     /* order number limit + status buffers */
     int size = LIMIT * sizeof(order_t) + 20; 
@@ -132,25 +133,28 @@ int main() {
     /* Define the name of this socket. */   
     strcpy(server_addr.sun_path, PATH);
     /* bind function call with typecasted arguments of server address */
-    if (bind (sd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1)
+    /* third argument may need to be sizeof(server_addr) */
+    if (bind (sd, (struct sockaddr *) &server_addr, addr_len) == -1)
         fatal("while binding");
     if (listen(sd, QUEUE) == -1)
         fatal("while listening");
     /* endless loop to get new connections */
     while (1) {
         addr_len = sizeof(struct sockaddr_un);
+        /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
         read(new_conn, &temp, sizeof(temp));
+        /* temp now has the order. closing connection... */
         close(new_conn);
-	order_list->m_num = temp[0];
+        order_list->m_num = temp[0];
         order_list->p_num = temp[1];	
         order_list->s_num = temp[2];	
         order_list->time = temp[3];	
-	order_list->status1 = 0;
-	order_list->status2 = 0;
-	/* in order to save new order to next field */
-	order_list++;
-	pid = fork();
+        order_list->status1 = 0;
+        order_list->status2 = 0;
+        /* in order to save new order to next field */
+        order_list++;
+        pid = fork();
         if (pid == 0)
             break;
     }
@@ -160,17 +164,18 @@ int main() {
     /* configure shared memory for every child proccess  */
     shm_id = shmget(SHM_KEY, size , 0600);
     if (shm_id == -1)          
-    fatal("in shared memory");
+        fatal("in shared memory");
+    /* Do we need to attach ??? */
     /* shm_start = shmat(shm_id, NULL, 0); */
 	
     /* get in the oven */
     cook(order_list); 
     /* get gone */
     deliverer();
-    /* release memory */
     
-    if ( shmdt(shm_start) == -1 )
-      fatal("order could not detach from shared memory");	
+    /* detaching from shared memory */
+    if (shmdt(shm_start) == -1)
+        fatal("order could not detach from shared memory");	
 	
     /* terminate */
 }

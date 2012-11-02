@@ -1,6 +1,9 @@
 # Vim files
 *.swp
 
+# Backup files
+*~
+
 # Compiled files
 a.out
 server
