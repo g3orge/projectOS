@@ -32,7 +32,3 @@ int main(int argc, char **argv) {
   connect(client_sd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
   /*sent information to server */
   write( client_sd , &send , sizeof( char ) );
-  /*close connection*/
-  close(client_sd);
-  
-}

@@ -123,8 +123,10 @@ int main() {
     /* Socket business */
     sd = socket(PF_UNIX, SOCK_STREAM, 0);
     if (sd == -1)
-        fatal("while creating socket");
+        fatal("while creating server's socket");
     unlink(PATH);
+     /* Zero all fields of servaddr. */
+    bzero( &serv_addr, sizeof( serv_addr ) ); 
     /* socket internal information --- Maybe: AF_LOCAL */
     server_addr.sun_family = AF_UNIX;
     strcpy(server_addr.sun_path, PATH);
@@ -161,7 +163,7 @@ int main() {
     /* shm_start = shmat(shm_id, NULL, 0); */
 	
     /* get in the oven */
-    cook(); 
+    cook(order_list); 
     /* get gone */
     deliverer();
     /* release memory */
