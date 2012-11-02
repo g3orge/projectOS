@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/un.h>
 
 #define TIME_MARGARITA 10
 #define TIME_PEPPERONI 12
@@ -82,12 +83,15 @@ void deliverer() {
 
 int main() {	
     pid_t pid;
-    int sd, new_conn, shm_id, i;
+    int sd, new_conn; /* socket filedescriptors */
+    int shm_id, i;
     int ord_len = sizeof(order_t);
     int temp[ord_len];
-    /* unix socket address declarations and lengths */
+    /* unix socketraddress declarations and lengths */
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len;
+    
+    
     /* order number limit + status buffers */
     int size = LIMIT * sizeof(order_t) + 20; 
 
@@ -105,13 +109,13 @@ int main() {
     shm_id = shmget(SHM_KEY, size, 0600 | IPC_CREAT);
     if (shm_id == -1)
         fatal("in shared memory");
-    int* shm_start = shmat(shm_id, NULL, 0);
-    if (shm_start == (char *)-1)
+    bool* shm_start = shmat(shm_id, NULL, 0);
+    if (shm_start == (bool *)-1)
         fatal("main could not attach to shared memory");
     /* Setting the pointers to memory */
     bool* cook_status = shm_start;
     bool* deliverer_status = shm_start + 10;
-    order_t* order_list = shm_start + 20;
+    order_t* order_list = (order_t*)shm_start + 20;
     for (i = 0; i < 20; i++) {
         *(shm_start + i) = false;
     }
@@ -125,14 +129,14 @@ int main() {
     server_addr.sun_family = AF_UNIX;
     strcpy(server_addr.sun_path, PATH);
     /* bind function call with typecasted arguments of server address */
-    if (bind (sd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+    if (bind (sd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1)
         fatal("while binding");
     if (listen(sd, QUEUE) == -1)
         fatal("while listening");
     /* endless loop to get new connections */
     while (1) {
         addr_len = sizeof(struct sockaddr_un);
-        new_conn = accept(sd, (struct sockaddr *)&client_addr, &addr_len);
+        new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
         read(new_conn, &temp, sizeof(temp));
         close(new_conn);
 	order_list->m_num = temp[0];
@@ -157,11 +161,11 @@ int main() {
     /* shm_start = shmat(shm_id, NULL, 0); */
 	
     /* get in the oven */
-    
+    cook(); 
     /* get gone */
-	
+    deliverer();
     /* release memory */
-   
+    
     if ( shmdt(shm_start) == -1 )
       fatal("order could not detach from shared memory");	
 	
