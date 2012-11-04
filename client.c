@@ -21,10 +21,41 @@ int clear_input_buffer(void) {
     return ch;
 }
 
+/* Struct for the pizza order */
+typedef struct {
+    int d_num;
+    int p_num;
+    int s_num;
+    char *distance;
+    
+  
+} order_t;
+
+/* function that prints the correct order format */
+void order_format(){
+    printf("\nOrder format :$ client <arg1> <arg2> <arg3> <arg4> <arg5> ");
+    printf("\n<arg1> : the number of daisy pizzas you want to order ");
+    printf("\n<arg2> : the number of peperoni pizzas you want to order ");
+    printf("\n<arg3> : the number of special pizzas you want to order ");
+    printf("\n<arg4> : your distance from the pizza server ");
+    printf(" ( 't_l' for a long distance 't_s' for short distance) ");
+    printf("\n\nYour order should have the exact format as shown above\n\n");
+    
+}
+
+/* function that prints order details */
+void print_order(order_t  order){
+  
+    printf("\n Your order \n %i daisy pizzas", order.d_num);
+    printf("\n %i peperoni pizzas", order.p_num); 
+    printf("\n %i special pizzas", order.s_num); 
+    printf("\n %s distance", order.distance);      
+}
 /* A function to display an error message and then exit */
 void fatal(char *message) {
     fprintf(stderr, "\a!! - Fatal error - ");
     fprintf(stderr, "%s\n", message);
+    order_format(); /* print the correct order format */
     exit(EXIT_FAILURE);
 }
 
@@ -36,17 +67,9 @@ int RandomInteger(int low, int high) {
     return k;  
 }
 
-/* Struct for the pizza order */
-typedef struct {
-    int d_num;
-    int p_num;
-    int s_num;
-    char *distance;
-  
-} order_t;
 
 /* function for interactively create a new order */
-order_t make_order(){
+order_t make_order(void){
     order_t order;
     order.distance = (char*)malloc(4); 
     printf("\nmake your oder");
@@ -65,39 +88,17 @@ order_t make_order(){
     return order;
 }
 
-/* function that prints order details */
-void print_order(order_t  order){
-  
-    printf("\n Your order \n %i daisy pizzas", order.d_num);
-    printf("\n %i peperoni pizzas", order.p_num); 
-    printf("\n %i special pizzas", order.s_num); 
-    printf("\n %s distance", order.distance);      
-}
-
-/* function that prints the correct order format */
-void order_format(){
-    printf("\nOrder format :$ client <arg1> <arg2> <arg3> <arg4> <arg5> ");
-    printf("\n<arg1> : the number of daisy pizzas you want to order ");
-    printf("\n<arg2> : the number of peperoni pizzas you want to order ");
-    printf("\n<arg3> : the number of special pizzas you want to order ");
-    printf("\n<arg4> : your distance from the pizza server ");
-    printf(" ( 't_l' for a long distance 't_s' for short distance) ");
-    printf("\n your order should have the exact format as shown above ");
-    printf("\n PRESS ANY KEY TO EXIT");
-    int exit = getchar();
-}
-
 /* this function creates a random order */
-order_t random_order(){
+order_t random_order(void){
  
    order_t order;
    order.d_num = RandomInteger(0,5);
    order.p_num = RandomInteger(0,5);
    order.s_num = RandomInteger(0,5);
    if (RandomInteger(0,1) == 0)
-     order.distance = 't_l';
+     order.distance = "t_l";
    else 
-     order.distance = 't_s';
+     order.distance = "t_s";
    return order;
 }
 
@@ -115,19 +116,14 @@ int main(int argc, char **argv) {
       order = make_order();
     }
     else if ( argc < 5 ) {
-      if (( argc == 1 ) && ( argv[1] == 'rand' ))
+      if (( argc == 2 ) && (strcmp(argv[1], "yes")))
 	order = random_order();
-      else {
-      printf("Some fields of the order are missing\n");
-      /* TODO: print out the missing fields */
-      order_format(); /* print the correct oder format */
-      exit(EXIT_FAILURE);
-      }
+      else 
+      fatal("Some fields of the order are missing\n");
+      
     }
     else if ( argc > 5 ) {
-      printf("Wrong input format\n");
-      order_format();
-      exit(EXIT_FAILURE);
+      fatal("Wrong input format\n");
     }
     /* right case */
     else {
@@ -138,22 +134,27 @@ int main(int argc, char **argv) {
       order.distance = argv[4];
     }
       
-      /* confirmation of the order */
+    /* confirmation of the order */
        
+   
+    
+    for(;;) {
       /* print out the order */
       print_order(order);
-     
+      
       do { 
+	
 	printf("\n confirm? [y/n] : ");
 	confirm = getchar();
-	if ( confirm == 'y' ) {	
+	if ( confirm == 'y' ) 
 	  break;
-	}
-	else if ( confirm == 'n' ) {
+	else if ( confirm == 'n' ) 
 	  order = make_order();
-	}
       } while (( confirm != 'y' ) && ( confirm !='n'));
-   
+      
+      if (confirm=='y')
+	break;
+      }
     
     
     /* TODO: declare sent variable */
