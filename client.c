@@ -5,12 +5,21 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h
+#include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 
 #define MAXORDER 10
+#define PATH "socketfile"
+
+/* A function to display an error message and then exit */
+void fatal(char *message) {
+    fprintf(stderr, "\a!! - Fatal error - ");
+    fprintf(stderr, "%s\n", message);
+    exit(EXIT_FAILURE);
+}
 
 /* This is a system function to generate random numbers where needed */
 int RandomInteger(int low, int high) {  
@@ -72,10 +81,10 @@ order_t random_order(){
    order.d_num = RandomInteger(0,5);
    order.p_num = RandomInteger(0,5);
    order.s_num = RandomInteger(0,5);
-   if ((int i = RandomInteger(0,1)) == 0)
-     order.distance == 't_l';
+   if (RandomInteger(0,1) == 0)
+     order.distance = 't_l';
    else 
-     order.distance == 't_s';
+     order.distance = 't_s';
    return order;
 }
 
@@ -86,12 +95,13 @@ int main(int argc, char **argv) {
     /* auxiliary variables */
     char confirm;
     short int  counter=0;
+    int i;
     
     /* parsing arguments */
-    if ( argc == 0 ) {
+    if ( argc == 1 ) {
       order = make_order();
     }
-    else if ( argc < 5 ) {
+    else if ( argc < 6 ) {
       if (( argc == 1 ) && ( argv[1] == 'rand' ))
 	order = random_order();
       else {
@@ -101,7 +111,7 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
       }
     }
-    else if ( argc > 5 ) {
+    else if ( argc > 6 ) {
       printf("Wrong input format\n");
       order_format();
       exit(EXIT_FAILURE);
@@ -116,10 +126,11 @@ int main(int argc, char **argv) {
     }
       
       /* confirmation of the order */
-   for (int i = 0; i<3 ; i++ ) {
+      
+   for ( i=0 ; i <= 3 ; i++ ) {
        
       /* print out the order */
-      print_order();
+      print_order(order);
      
       do { 
 	printf("\n confirm? [y/n] : ");
@@ -143,11 +154,11 @@ int main(int argc, char **argv) {
     if (client_sd = socket( PF_UNIX, SOCK_STREAM, 0 )== -1 )
       fatal("while creating clients socket"); 
     /* socket internal information --- Maybe: AF_LOCAL */
-    servaddr.sun_family = AF_UNIX;
+    serv_addr.sun_family = AF_UNIX;
     /* Zero all fields of servaddr. */
-    bzero( &servaddr, sizeof( serv_addr ) ); 
+    bzero( &serv_addr, sizeof( serv_addr ) ); 
     /* Define the name of this socket. */
-    strcpy( servaddr.sun_path, PATH ); 
+    strcpy( serv_addr.sun_path, PATH ); 
     /* Connect the client's and the server's endpoint. */
     connect(client_sd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
     /*sent information to server */
