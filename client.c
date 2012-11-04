@@ -1,4 +1,4 @@
-/* Client programm
+/* Client program
  * George Papanikolaou - Prokopis Gryllos
  * Operating Systems Project 2012 - Pizza Delivery
  * There is absolutely no warranty
@@ -9,10 +9,17 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/un.h>
+#include <sys/un.h>	
 
 #define MAXORDER 10
 #define PATH "socketfile"
+
+/* function to clear the input buffer */
+int clear_input_buffer(void) {
+    int ch;
+    while (((ch = getchar()) != EOF) && (ch != '\n')) /* void */;
+    return ch;
+}
 
 /* A function to display an error message and then exit */
 void fatal(char *message) {
@@ -31,9 +38,9 @@ int RandomInteger(int low, int high) {
 
 /* Struct for the pizza order */
 typedef struct {
-    short int d_num;
-    short int p_num;
-    short int s_num;
+    int d_num;
+    int p_num;
+    int s_num;
     char *distance;
   
 } order_t;
@@ -41,24 +48,30 @@ typedef struct {
 /* function for interactively create a new order */
 order_t make_order(){
     order_t order;
-    printf("\nmake your oder\n");
+    order.distance = (char*)malloc(4); 
+    printf("\nmake your oder");
     printf("\nHow many daisy pizzas do you want? :");
-    order.d_num = getchar();
+    scanf("%d",&order.d_num);
+    clear_input_buffer();
     printf("\nHow many peperoni pizzas do you want? :");
-    order.p_num = getchar();
+    scanf("%d",&order.p_num);
+    clear_input_buffer();
     printf("\nHow many special pizzas do you want? :");
-    order.s_num = getchar();
-    printf("\n Where do you live? ( 't_l' for a long distance 't_s' for short distance)");
+    scanf("%d",&order.s_num);
+    clear_input_buffer();
+    printf("\n Where do you live? ( 't_l' for a long distance 't_s' for short distance):");
+    
+    gets(order.distance);
     return order;
 }
 
 /* function that prints order details */
 void print_order(order_t  order){
   
-    printf("Your order \n %d daisy pizzas", order.d_num);
-    printf("\n %d peperoni pizzas", order.p_num); 
-    printf("\n %d special pizzas", order.s_num); 
-    printf("\n %p distance", order.distance);      
+    printf("\n Your order \n %i daisy pizzas", order.d_num);
+    printf("\n %i peperoni pizzas", order.p_num); 
+    printf("\n %i special pizzas", order.s_num); 
+    printf("\n %s distance", order.distance);      
 }
 
 /* function that prints the correct order format */
@@ -101,7 +114,7 @@ int main(int argc, char **argv) {
     if ( argc == 1 ) {
       order = make_order();
     }
-    else if ( argc < 6 ) {
+    else if ( argc < 5 ) {
       if (( argc == 1 ) && ( argv[1] == 'rand' ))
 	order = random_order();
       else {
@@ -111,7 +124,7 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
       }
     }
-    else if ( argc > 6 ) {
+    else if ( argc > 5 ) {
       printf("Wrong input format\n");
       order_format();
       exit(EXIT_FAILURE);
@@ -126,8 +139,6 @@ int main(int argc, char **argv) {
     }
       
       /* confirmation of the order */
-      
-   for ( i=0 ; i <= 3 ; i++ ) {
        
       /* print out the order */
       print_order(order);
@@ -135,14 +146,14 @@ int main(int argc, char **argv) {
       do { 
 	printf("\n confirm? [y/n] : ");
 	confirm = getchar();
-	if ( confirm == 'y' ) {
+	if ( confirm == 'y' ) {	
 	  break;
 	}
 	else if ( confirm == 'n' ) {
 	  order = make_order();
 	}
       } while (( confirm != 'y' ) && ( confirm !='n'));
-   }
+   
     
     
     /* TODO: declare sent variable */
