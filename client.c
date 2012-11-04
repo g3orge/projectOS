@@ -12,6 +12,14 @@
 
 #define MAXORDER 10
 
+/* This is a system function to generate random numbers where needed */
+int RandomInteger(int low, int high) {  
+    int k;
+    int dif=high-low+1; 
+    k = low + rand() % dif; 
+    return k;  
+}
+
 /* Struct for the pizza order */
 typedef struct {
     short int d_num;
@@ -21,6 +29,7 @@ typedef struct {
   
 } order_t;
 
+/* function for interactively create a new order */
 order_t make_order(){
     order_t order;
     printf("\nmake your oder\n");
@@ -31,8 +40,10 @@ order_t make_order(){
     printf("\nHow many special pizzas do you want? :");
     order.s_num = getchar();
     printf("\n Where do you live? ( 't_l' for a long distance 't_s' for short distance)");
+    return order;
 }
 
+/* function that prints order details */
 void print_order(order_t  order){
   
     printf("Your order \n %d daisy pizzas", order.d_num);
@@ -41,6 +52,7 @@ void print_order(order_t  order){
     printf("\n %p distance", order.distance);      
 }
 
+/* function that prints the correct order format */
 void order_format(){
     printf("\nOrder format :$ client <arg1> <arg2> <arg3> <arg4> <arg5> ");
     printf("\n<arg1> : the number of daisy pizzas you want to order ");
@@ -53,8 +65,18 @@ void order_format(){
     int exit = getchar();
 }
 
+/* this function creates a random order */
 order_t random_order(){
-  /* this function creates a random order */
+ 
+   order_t order;
+   order.d_num = RandomInteger(0,5);
+   order.p_num = RandomInteger(0,5);
+   order.s_num = RandomInteger(0,5);
+   if ((int i = RandomInteger(0,1)) == 0)
+     order.distance == 't_l';
+   else 
+     order.distance == 't_s';
+   return order;
 }
 
 int main(int argc, char **argv) {
