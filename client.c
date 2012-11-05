@@ -31,7 +31,7 @@ typedef struct {
   
 } order_t;
 
-/* function that prints the correct order format */
+/* function that print	s the correct order format */
 void order_format(){
     printf("\nOrder format :$ client <arg1> <arg2> <arg3> <arg4> <arg5> ");
     printf("\n<arg1> : the number of daisy pizzas you want to order ");
@@ -103,6 +103,8 @@ order_t random_order(void){
 }
 
 int main(int argc, char **argv) {
+ 
+    srand((int)time(0)); 
     /* create order_t object */
     order_t order;
     
@@ -116,10 +118,10 @@ int main(int argc, char **argv) {
       order = make_order();
     }
     else if ( argc < 5 ) {
-      if (( argc == 2 ) && (strcmp(argv[1], "yes")))
+      if (( argc == 2 ) && (strcmp(argv[1], "rand")==0))
 	order = random_order();
       else 
-      fatal("Some fields of the order are missing\n");
+        fatal("Some fields of the order are missing\n");
       
     }
     else if ( argc > 5 ) {
@@ -163,7 +165,7 @@ int main(int argc, char **argv) {
     /* struct for server socket address */
     struct sockaddr_un serv_addr;
     /* create clients endpoint */
-    if (client_sd = socket( PF_UNIX, SOCK_STREAM, 0 )== -1 )
+    if (client_sd = socket( AF_UNIX, SOCK_STREAM, 0 )== -1 )
       fatal("while creating clients socket"); 
     /* socket internal information --- Maybe: AF_LOCAL */
     serv_addr.sun_family = AF_UNIX;
@@ -174,7 +176,7 @@ int main(int argc, char **argv) {
     /* Connect the client's and the server's endpoint. */
     connect(client_sd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
     /*sent information to server */
-    write( client_sd , &send , sizeof( char ) );
+    write( client_sd , order , sizeof( order ) );
     /*close connection*/
     close(client_sd);
     
