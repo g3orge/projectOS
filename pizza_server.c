@@ -126,15 +126,14 @@ int main() {
     if (sd == -1)
         fatal("while creating server's socket");
     unlink(PATH);
-     /* Zero all fields of servaddr. */
+    /* Zero all fields of servaddr */
     bzero(&server_addr, addr_len);
     /* socket internal information --- Maybe: AF_LOCAL */
     server_addr.sun_family = AF_UNIX;
     /* Define the name of this socket */
     strcpy(server_addr.sun_path, PATH);
     /* bind function call with typecasted arguments of server address */
-    /* third argument may need to be sizeof(server_addr) */
-    if (bind (sd, (struct sockaddr *) &server_addr, addr_len) == -1)
+    if (bind (sd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1)
         fatal("while binding");
     if (listen(sd, QUEUE) == -1)
         fatal("while listening");
