@@ -93,7 +93,7 @@ int main() {
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len;
     
-    /* order number limit + status buffers */
+    /* Shared memory size: order number limit + status buffers */
     int size = LIMIT * sizeof(order_t) + 20; 
 
     /* Fork off the parent process to get into deamon mode */
@@ -126,8 +126,6 @@ int main() {
     if (sd == -1)
         fatal("while creating server's socket");
     unlink(PATH);
-    /* Zero all fields of servaddr */
-    bzero(&server_addr, addr_len);
     /* socket internal information --- Maybe: AF_LOCAL */
     server_addr.sun_family = AF_UNIX;
     /* Define the name of this socket */
