@@ -97,13 +97,13 @@ int main() {
     int size = LIMIT * sizeof(order_t) + 20; 
 
     /* Fork off the parent process to get into deamon mode */
-    pid = fork();
+    /* pid = fork(); */
     if (pid == -1)
         fatal("Can't fork parent");
     if (pid > 0) {
         /* Stopping the parent proccess and just keeping the child */
         printf(">> Deamon mode <<\n");
-        exit(EXIT_SUCCESS);
+        /* exit(EXIT_SUCCESS); */
     }
 
     /* Shared memory allocation */
@@ -137,6 +137,7 @@ int main() {
         fatal("while listening");
     /* endless loop to get new connections */
     while (1) {
+        printf("INSIDE WHILE\n");
         addr_len = sizeof(struct sockaddr_un);
         /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
