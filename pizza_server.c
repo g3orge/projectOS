@@ -86,9 +86,8 @@ int main() {
     /* socket file descriptors */
     int sd, new_conn;
     int shm_id, i;
-    /* calculating and initialising a buffer to get data from socket stream */
-    int ord_len = sizeof(order_t);
-    int temp[ord_len];
+    /* temporary place for incoming data */
+    order_t incoming;
     /* unix socket address declarations and lengths */
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len;
@@ -128,7 +127,6 @@ int main() {
     unlink(PATH);
     /* socket internal information --- Maybe: AF_LOCAL */
     server_addr.sun_family = AF_UNIX;
-    /* Define the name of this socket */
     strcpy(server_addr.sun_path, PATH);
     /* bind function call with typecasted arguments of server address */
     if (bind (sd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1)
@@ -141,18 +139,13 @@ int main() {
         addr_len = sizeof(struct sockaddr_un);
         /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
-        read(new_conn, &temp, sizeof(temp));
-        /* temp now has the order. closing connection... */
+        read(new_conn, &incoming, sizeof(incoming));
         close(new_conn);
-        order_list->m_num = temp[0];
-        order_list->p_num = temp[1];	
-        order_list->s_num = temp[2];	
-        order_list->time = temp[3];	
-        order_list->status1 = 0;
-        order_list->status2 = 0;
-        /* in order to save new order to next field */
-        order_list++;
-        pid = fork();
+        printf("%d\n",sizeof(incoming));
+
+        printf("\n%d\n",incoming.m_num);
+
+        /* pid = fork(); */
         if (pid == 0)
             break;
     }
