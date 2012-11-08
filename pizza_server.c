@@ -36,6 +36,7 @@
 #define N_MAXPIZZA 3
 /* System values: key(maybe a key_t?), pizza limit, listen queue */
 #define SHM_KEY 7942
+#define SEM_NAME "onoma"
 #define LIMIT 200
 #define QUEUE 5
 #define PATH "socketfile"
@@ -85,6 +86,7 @@ int main() {
     pid_t pid;
     /* socket file descriptors */
     int sd, new_conn;
+    /* shared memory id and an index for loops */
     int shm_id, i;
     /* temporary place for incoming data */
     order_t incoming;
@@ -95,7 +97,10 @@ int main() {
     /* Shared memory size: order number limit + status buffers */
     int size = LIMIT * sizeof(order_t) + 20; 
 
+    /* ================ END OF DECLARATIONS ===================*/
+
     /* Fork off the parent process to get into deamon mode */
+    /* UNCOMMENT THIS and line 109 TO WORK */
     /* pid = fork(); */
     if (pid == -1)
         fatal("Can't fork parent");
@@ -105,6 +110,12 @@ int main() {
         /* exit(EXIT_SUCCESS); */
     }
 
+    /* Semaphore business */
+    sem_t *sem;
+    sem = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
+    if (sem == SEM_FAILED)
+        fatal("could not create semaphore");
+
     /* Shared memory allocation */
     shm_id = shmget(SHM_KEY, size, 0600 | IPC_CREAT);
     if (shm_id == -1)
@@ -112,7 +123,7 @@ int main() {
     bool* shm_start = shmat(shm_id, NULL, 0);
     if (shm_start == (bool *)-1)
         fatal("main could not attach to shared memory");
-    /* Setting the pointers to memory */
+    /* Setting the pointers to shared memory */
     bool* cook_status = shm_start;
     bool* deliverer_status = shm_start + 10;
     order_t* order_list = (order_t*)shm_start + 20;
@@ -133,18 +144,23 @@ int main() {
         fatal("while binding");
     if (listen(sd, QUEUE) == -1)
         fatal("while listening");
+
     /* endless loop to get new connections */
     while (1) {
-        printf("INSIDE WHILE\n");
+        printf("Inside While (Debugging)\n");
         addr_len = sizeof(struct sockaddr_un);
         /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
         read(new_conn, &incoming, sizeof(incoming));
+        /* close connection with this client */
         close(new_conn);
-        printf("%d\n",sizeof(incoming));
-
         printf("\n%d\n",incoming.m_num);
+        *order_list = incoming;
+        printf("%d\n",order_list->m_num);
+        /* (--order_list)->m_num */
 
+        /* getting the pointer to point to the new address */
+        order_list++;
         /* pid = fork(); */
         if (pid == 0)
             break;
@@ -157,13 +173,10 @@ int main() {
     if (shm_id == -1)          
         fatal("in shared memory");
     /* Do we need to attach ??? */
-    /* shm_start = shmat(shm_id, NULL, 0); */
-	
-    /* get in the oven */
-    cook(order_list);
-    /* get gone */
-    deliverer();
-    
+    /* bool* shm_start = shmat(shm_id, NULL, 0); */
+    /* if (shm_start == (bool *)-1) */
+        /* fatal("childs could not attach to shared memory"); */
+
     /* detaching from shared memory */
     if (shmdt(shm_start) == -1)
         fatal("order could not detach from shared memory");	
