@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <signal.h>
 #include <semaphore.h>
 #include <unistd.h>
@@ -59,9 +60,15 @@ int counter = 0;
 
 void fatal(char *message) {
     /* A function to display an error message and then exit */
-    /* Maybe put it in a logfile so it can be accessible from everywhere */
     fprintf(stderr, "\a!! - Fatal error - ");
     fprintf(stderr, "%s\n", message);
+    /* also writing to a logfile */
+    FILE *fd;
+    time_t raw_time;
+    time(&raw_time);
+    fd = fopen("logfile", "a");
+    fprintf(fd, "!!! Fatal error: %s --- %s", message, ctime(&raw_time));
+    fclose(fd);
     exit(EXIT_FAILURE);
 }
 

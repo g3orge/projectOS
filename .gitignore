@@ -22,3 +22,5 @@ s
 *.lai
 *.la
 *.a
+
+logfile
