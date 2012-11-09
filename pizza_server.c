@@ -39,7 +39,7 @@
 #define SEM_NAME "onoma"
 #define LIMIT 200
 #define QUEUE 5
-#define PATH "socketfile"
+#define PATH "/tmp/pizza-server1547809"
 
 /* Declaration of boolean type */
 typedef enum { false, true } bool;
@@ -54,6 +54,9 @@ typedef struct {
     bool status2;
 } order_t;
 
+/* necessary signal counter */
+int counter = 0;
+
 void fatal(char *message) {
     /* A function to display an error message and then exit */
     /* Maybe put it in a logfile so it can be accessible from everywhere */
@@ -63,9 +66,9 @@ void fatal(char *message) {
 }
 
 void handler(int sig_num) {
-    /* A simple handler maybe for stats */
-    fprintf(stderr,"\nCathing Terminate Signal");
-    exit(EXIT_SUCCESS);
+    /* Decrement the counter, this is for the order handling
+     * function to see how many pizzas are ready */
+    counter--;
 }
 
 void cook(char t) {
@@ -81,11 +84,11 @@ void cook(char t) {
     /* The cook functions does not change the statuses of the orders */
 }
 
-void deliverer(char d) {
+void delivery(bool d) {
     /* The waiting function for the delivery */
-    if (d == 's')
+    if (d == false)
         usleep(T_KONTA);
-    else if (d == 'l')
+    else if (d == true)
         usleep(T_MAKRIA);
     else
         fatal("Wrong input on delivery function");
@@ -108,9 +111,6 @@ int main() {
 
     /* ================ END OF DECLARATIONS ===================*/
 
-    /* ctrl-C signal handler */
-    signal(SIGINT, handler);
-
     /* Fork off the parent process to get into deamon mode */
     /* UNCOMMENT THIS TO WORK */
     /* pid = fork(); */
@@ -123,10 +123,19 @@ int main() {
     }
 
     /* Semaphore business */
-    sem_t *mutex;
-    mutex = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
-    if (mutex == SEM_FAILED)
+    sem_t *cooks , *deliverers;
+    cooks = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
+    if (cooks == SEM_FAILED)
         fatal("could not create semaphore");
+    deliverers = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
+    if (deliverers == SEM_FAILED)
+        fatal("could not create semaphore");
+    /* semaphore initialization (Maybe 9??) */
+    /* XXX: SEcond argument ==> Maybe 0 (see man page) */
+    if (sem_init(cooks, 1, 10) == -1)
+        fatal("could not initialize semaphore");
+    if (sem_init(deliverers, 1, 10) == -1)
+        fatal("could not initialize semaphore");
 
     /* Shared memory allocation */
     shm_id = shmget(SHM_KEY, size, 0600 | IPC_CREAT);
@@ -177,12 +186,10 @@ int main() {
             break;
     }
 
-    /* Childs operate below */
+    /* Children operate below */
 
-    /* getting the pid to avoid the mess with the if-s */
-    pid = getpid();
-    /* The chosen cooker id. defaults to -1: not found */
-    int chosen = -1;
+    /* new pid for the order sub-proccess */
+    pid_t pid_order;
     char pizza_type = 'n';
 	
     /* configure shared memory for every child proccess  */
@@ -192,69 +199,76 @@ int main() {
     bool* shm_begin = shmat(shm_id, NULL, 0);
     if (shm_begin == (bool *)-1)
         fatal("childs could not attach to shared memory");
-    /* Configuring the pointers to shared memory */
-    bool* cook_status = shm_begin;
-    bool* deliverer_status = shm_begin + N_PSISTES;
-    /* XXX: This raises error for redefinition
+    /* Configuring the pointers to shared memory
+     * XXX: This raises error for redefinition
      * we need to change how we are passing the data to the children */
     order_t* order_list = (order_t*)shm_begin + N_DIANOMEIS + N_PSISTES;
 
-    /* forking for the individual pizzas */
-    while (1) {
-        while (order_list->m_num != 0) {
-            (order_list->m_num)--;
-            /* Margarita type */
-            pizza_type = 'm';
-            pid = fork();
-            if (pid == 0)
-                break;
-        }
-        while (order_list->p_num != 0) {
-            (order_list->p_num)--;
-            pizza_type = 'p';
-            pid = fork();
-            if (pid == 0)
-                break;
-        }
-        while (order_list->s_num != 0) {
-            (order_list->s_num)--;
-            pizza_type = 's';
-            pid = fork();
-            if (pid == 0)
-                break;
-        }
-        /* This is to get out of the nested while-s. Other solution: goto */
-        if (pid == 0)
+    /* pizza sum */
+    counter = order_list->m_num + order_list->p_num + order_list->s_num;
+    if (counter == 0)
+        fatal("No pizza");
+
+    while (order_list->m_num != 0) {
+        (order_list->m_num)--;
+        /* Margarita type */
+        pizza_type = 'm';
+        pid_order = fork();
+        if (pid_order == 0)
             break;
     }
-    /* after forking for the individual pizzas, exit */
-    if (pid > 0)
+    while (order_list->p_num != 0) {
+        (order_list->p_num)--;
+        pizza_type = 'p';
+        pid_order = fork();
+        if (pid_order == 0)
+            break;
+    }
+    while (order_list->s_num != 0) {
+        (order_list->s_num)--;
+        pizza_type = 's';
+        pid_order = fork();
+        if (pid_order == 0)
+            break;
+    }
+
+    if (pid_order > 0) {
+        /* Code for complete order handling */
+        signal(SIGUSR1, handler);
+
+        /* set "cooking" status */
+        order_list->status2 = 1;
+
+        while (counter != 0) { /* wait */ }
+        /* set "cooked" status */
+        order_list->status1 = 1;
+        order_list->status2 = 0;
+
+        /* DELIVERY */
+        sem_wait(deliverers);
+        delivery(order_list->time);
+        /* setting "delivering" status */
+        order_list->status2 = 1;
+        /* Done. Give back the deliverer */
+        sem_post(deliverers);
+
+        /* detaching from shared memory */
+        if (shmdt(shm_begin) == -1)
+            fatal("order could not detach from shared memory");
+	
         exit(EXIT_SUCCESS);
+    }
 
     /* FROM HERE INDIVIDUAL PIZZAS */
-    sem_wait(&mutex);
-    /* let's choose a cooker */
-    for (i = 0; i < 10; i++) {
-        if ( *(cook_status + i) == 0) {
-            *(cook_status + i) = 1;
-            chosen = i;
-            break;
-        }
-    }
-    sem_post(&mutex);
 
-    /* ready for cooking */
-    order_list->status2 = 1;
+    /* cooking */
+    sem_wait(cooks);
     cook(pizza_type);
-    /* cooked */
-    order_list->status1 = 1;
-    order_list->status2 = 0;
+    pid_order = getppid();
+    /* pizza ready, send the signal */
+    kill(pid_order, SIGUSR1);
+    /* Done. Semaphore up */
+    sem_post(cooks);
 
-    /* THE SAME FOR DELIVERY */
-
-    /* detaching from shared memory */
-    if (shmdt(shm_start) == -1)
-        fatal("order could not detach from shared memory");	
-	
     return 0;
 }
