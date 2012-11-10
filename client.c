@@ -31,7 +31,7 @@ void print_order(order_t  order) {
     printf("\n Your order \n %i daisy pizzas", order.m_num);
     printf("\n %i peperoni pizzas", order.p_num); 
     printf("\n %i special pizzas", order.s_num); 
-    if (order.distance == true )
+    if (order.time == true )
         printf("\n distance: long distance");
     else 
         printf("\n distance: short distance");
@@ -39,12 +39,12 @@ void print_order(order_t  order) {
 
 /* a function to return bool type */
 bool torf(int i) {
-    bool distance;
+    bool time;
     if (i == 0)
-        distance = false;
+        time = false;
     else
-        distance = true;
-    return distance;
+        time = true;
+    return time;
 }
 
 /* A function to display an error message and then exit */
@@ -74,11 +74,11 @@ int RandomInteger(int low, int high) {
 
 /* function for interactively create a new order */
 order_t make_order(void) {
+    int i ;
     char choise;
     order_t order; 
     printf("\nMake your oder");
     printf("\nHow many margarita pizzas do you want? :");
-    clear_input_buffer();
     scanf("%d",&order.m_num);
     printf("\nHow many peperoni pizzas do you want? :");
     clear_input_buffer();
@@ -92,9 +92,9 @@ order_t make_order(void) {
         choise = getchar();
     } while (( choise !=  'l' ) && ( choise != 's' ));
     if ( choise == 'l' )
-        order.distance = torf(1);
+        order.time = torf(1);
     else if ( choise == 't' )
-        order.distance = torf(0);
+        order.time = torf(0);
     return order;
 }
 
@@ -104,7 +104,7 @@ order_t random_order(void) {
     order.m_num = RandomInteger(0,1);
     order.p_num = RandomInteger(0,1);
     order.s_num = RandomInteger(0,1);
-    order.distance = torf(RandomInteger(0,1));
+    order.time = torf(RandomInteger(0,1));
 
     return order;
 }
@@ -116,22 +116,22 @@ int main(int argc, char **argv) {
     order_t order;
 
     /* auxiliary variables */
-    char confirm;
+    char confirm ;
     int i;
 
     int client_sd; 
     struct sockaddr_un serv_addr;
 
     /* parsing arguments */
-    if ( argc == 1 ) {
+    if ( argc == 1 ) 
         order = make_order();
-    }
     else if ( argc < 5 ) {
-        if (( argc == 2 ) && (strcmp(argv[1], "rand")==0))
+        if (( argc == 2 ) && (strcmp(argv[1], "rand")==0)) {
             order = random_order();
+	    confirm = 'y';
+	}
         else 
             fatal(1,"Some fields of the order are missing\n");
-
     }
     else if ( argc > 5 ) {
         fatal(1,"Wrong input format\n");
@@ -145,33 +145,37 @@ int main(int argc, char **argv) {
             order.p_num = atoi(argv[2]);
             order.s_num = atoi(argv[3]);
             if ( argv[4] == "l" )
-                order.distance = torf(1);
+                order.time = torf(1);
             else
-                order.distance = torf(0);
+                order.time = torf(0);
         }
     }
 
+    
     /* confirmation of the order */
-    if ((order.m_num + order.p_num + order.s_num) > MAXORDER)
-        fatal(0,"Very big order, maximum acceptable order = 5 pizzas");
-
     for(;;) {
         /* print out the order */
         print_order(order);
 
-        do { 
-            printf("\n confirm? [y/n] : ");
-            clear_input_buffer();
-            confirm = getchar();
-            if ( confirm == 'y' ) 
+         while (( confirm != 'y' ) && ( confirm !='n')) {
+	    printf("\n confirm? [y/n] :");
+	    clear_input_buffer();
+	    confirm = getchar();
+	    if ( confirm == 'y' ) 
                 break;
             else if ( confirm == 'n' ) 
-                order = make_order();
-        } while (( confirm != 'y' ) && ( confirm !='n'));
-
+                order = make_order(); 
+        }
+    
         if (confirm=='y')
             break;
     }
+    
+    if (order.m_num + order.p_num + order.s_num > N_MAXPIZZA)
+        fatal(0,"Very big order, acceptable numbers (0-3 pizzas)");
+    
+    if (order.m_num<0  || order.p_num<0  ||  order.s_num<0 ) 
+         fatal(0,"Acceptable numbers (0-3 pizzas)");
 
     client_sd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (client_sd == -1)
