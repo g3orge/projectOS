@@ -56,6 +56,12 @@ void handler(int sig_num) {
     counter--;
 }
 
+void zombiehandler(int sig_num) {
+    /* The SIGCHLD handler to reap zombies */
+    int status;
+    wait(&status);
+}
+
 void term_hand (int sig_num) {
     /* The handler to terminater the server */
     shmctl(shm_id, IPC_RMID, NULL);
@@ -103,8 +109,9 @@ int main() {
     int size = LIMIT * sizeof(order_t);
 
     /* ================ END OF DECLARATIONS ===================*/
-    /* Ctrl-C signal handler */
+    /* signal handlers */
     signal(SIGINT, term_hand);
+    signal(SIGCHLD, zombiehandler);
 
     /* Fork off the parent process to get into deamon mode */
     pid = fork();
@@ -258,7 +265,6 @@ int main() {
         sem_close(deliverers);
         sem_close(mutex);
 	
-        /* THIS IS WHERE IT FREEZES */
         _exit(EXIT_SUCCESS);
     }
 
@@ -285,5 +291,4 @@ int main() {
     sem_close(mutex);
 
     _exit(EXIT_SUCCESS);
-    return 0;
 }
