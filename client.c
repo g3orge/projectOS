@@ -128,8 +128,8 @@ int main(int argc, char **argv) {
     else if ( argc < 5 ) {
         if (( argc == 2 ) && (strcmp(argv[1], "rand")==0)) {
             order = random_order();
-	    confirm = 'y';
-	}
+            confirm = 'y';
+        }
         else 
             fatal(1,"Some fields of the order are missing\n");
     }
@@ -151,34 +151,34 @@ int main(int argc, char **argv) {
         }
     }
 
-    
+
     /* confirmation of the order */
     for(;;) {
         /* print out the order */
         print_order(order);
 
-	if (confirm=='y')
+        if (confirm=='y')
             break;
-	
+
         do {
-	  printf("\n confirm? [y/n] :");
-	    
-	  clear_input_buffer();
-	  confirm = getchar();
-	  if ( confirm == 'y' ) 
-              break;
-          else if ( confirm == 'n' ) 
-              order = make_order();
-	    
-       } while (( confirm != 'y' ) && ( confirm !='n'));
-    
+            printf("\n confirm? [y/n] :");
+
+            clear_input_buffer();
+            confirm = getchar();
+            if ( confirm == 'y' ) 
+                break;
+            else if ( confirm == 'n' ) 
+                order = make_order();
+
+        } while (( confirm != 'y' ) && ( confirm !='n'));
+
     }
-    
+
     if (order.m_num + order.p_num + order.s_num > N_MAXPIZZA)
         fatal(0,"Very big order, acceptable numbers (0-3 pizzas)");
-    
+
     if (order.m_num<0  || order.p_num<0  ||  order.s_num<0 ) 
-         fatal(0,"Acceptable numbers (0-3 pizzas)");
+        fatal(0,"Acceptable numbers (0-3 pizzas)");
 
     client_sd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (client_sd == -1)

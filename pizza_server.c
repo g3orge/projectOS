@@ -166,6 +166,7 @@ int main() {
         /* close connection with this client */
         close(new_conn);
 
+        kill(getpid(), SIGCHLD);
         pid = fork();
         if (pid == 0)
             break;
@@ -191,9 +192,10 @@ int main() {
     sem_wait(mutex);
     while (order_list->exists != 0)
         order_list++;
+    /* putting into the memory */
+    *order_list = incoming;
     sem_post(mutex);
 
-    *order_list = incoming;
     log("order in shared memory");
 
     /* pizza sum */
@@ -257,7 +259,7 @@ int main() {
         sem_close(mutex);
 	
         /* THIS IS WHERE IT FREEZES */
-        exit(EXIT_FAILURE);
+        _exit(EXIT_SUCCESS);
     }
 
     /* FROM HERE INDIVIDUAL PIZZAS */
@@ -282,6 +284,6 @@ int main() {
     sem_close(deliverers);
     sem_close(mutex);
 
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
     return 0;
 }
