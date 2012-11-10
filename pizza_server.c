@@ -11,52 +11,20 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "pizza.h"
 #include <time.h>
 #include <signal.h>
 #include <semaphore.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include <sys/un.h>
-/* Pizza default values */ 
-#define TIME_MARGARITA 10
-#define TIME_PEPPERONI 12
-#define TIME_SPECIAL 15
-#define T_KONTA 5
-#define T_MAKRIA 10
-#define T_VERYLONG 50
-#define N_DIANOMEIS 10
-#define N_PSISTES 10
-#define N_MAXPIZZA 3
-/* System values: key(maybe a key_t?), pizza limit, listen queue */
-#define SHM_KEY 7942
-#define SEM_NAME "onoma"
-#define LIMIT 200
-#define QUEUE 5
-#define PATH "/tmp/pizza-server1547809"
 
-/* Declaration of boolean type */
-typedef enum { false, true } bool;
-
-/* Struct for the pizza order */
-typedef struct {
-    short m_num;
-    short p_num;
-    short s_num;
-    bool time;
-    bool status1;
-    bool status2;
-} order_t;
-
+/* Global variables */
 /* necessary signal counter */
 int counter = 0;
+int shm_id;
 
 void fatal(char *message) {
     /* A function to display an error message and then exit */
@@ -76,6 +44,12 @@ void handler(int sig_num) {
     /* Decrement the counter, this is for the order handling
      * function to see how many pizzas are ready */
     counter--;
+}
+
+void term_hand (int sig_num) {
+    /* The handler to terminater the server */
+    shmctl(shm_id, IPC_RMID, NULL);
+    exit(EXIT_SUCCESS);
 }
 
 void cook(char t) {
@@ -103,10 +77,9 @@ void delivery(bool d) {
 
 int main() {
     pid_t pid;
+    int i;
     /* socket file descriptors */
     int sd, new_conn;
-    /* shared memory id and an index for loops */
-    int shm_id, i;
     /* temporary place for incoming data */
     order_t incoming;
     /* unix socket address declarations and lengths */
@@ -114,9 +87,11 @@ int main() {
     socklen_t addr_len;
     
     /* Shared memory size: order number limit + status buffers */
-    int size = LIMIT * sizeof(order_t) + N_DIANOMEIS + N_PSISTES; 
+    int size = LIMIT * sizeof(order_t);
 
     /* ================ END OF DECLARATIONS ===================*/
+    /* Ctrl-C signal handler */
+    signal(SIGINT, term_hand);
 
     /* Fork off the parent process to get into deamon mode */
     /* UNCOMMENT THIS TO WORK */
@@ -137,26 +112,17 @@ int main() {
     deliverers = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
     if (deliverers == SEM_FAILED)
         fatal("could not create semaphore");
-    /* semaphore initialization (Maybe 9??) */
-    /* XXX: SEcond argument ==> Maybe 0 (see man page) */
-    if (sem_init(cooks, 1, 10) == -1)
+    /* semaphore initialization */
+    if (sem_init(cooks, 1, N_PSISTES) == -1)
         fatal("could not initialize semaphore");
-    if (sem_init(deliverers, 1, 10) == -1)
+    if (sem_init(deliverers, 1, N_DIANOMEIS) == -1)
         fatal("could not initialize semaphore");
 
     /* Shared memory allocation */
     shm_id = shmget(SHM_KEY, size, 0600 | IPC_CREAT);
     if (shm_id == -1)
-        fatal("in shared memory");
-    bool* shm_start = shmat(shm_id, NULL, 0);
-    if (shm_start == (bool *)-1)
-        fatal("main could not attach to shared memory");
-    /* pointer to the start of the list by shifting */
-    order_t* order_list = (order_t*)shm_start + N_DIANOMEIS + N_PSISTES;
-    /* initialization. here?? */
-    for (i = 0; i < 20; i++) {
-        *(shm_start + i) = false;
-    }
+        fatal("in shared memory (parent)");
+    /* we don't need to attach here */
 
     /* Socket business */
     sd = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -179,15 +145,12 @@ int main() {
         /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
         read(new_conn, &incoming, sizeof(incoming));
+        /* required variable for shared memory allocation */
+        incoming.exists = 1;
         /* close connection with this client */
         close(new_conn);
-        printf("\n%d\n",incoming.m_num);
-        *order_list = incoming;
-        printf("%d\n",order_list->m_num);
-        /* (--order_list)->m_num */
+        printf("%d\n",incoming.m_num);
 
-        /* getting the pointer to point to the new address */
-        order_list++;
         /* pid = fork(); */
         if (pid == 0)
             break;
@@ -202,14 +165,18 @@ int main() {
     /* configure shared memory for every child proccess  */
     shm_id = shmget(SHM_KEY, size , 0600);
     if (shm_id == -1)          
-        fatal("in shared memory");
+        fatal("in shared memory (in children)");
     bool* shm_begin = shmat(shm_id, NULL, 0);
     if (shm_begin == (bool *)-1)
-        fatal("childs could not attach to shared memory");
-    /* Configuring the pointers to shared memory
-     * XXX: This raises error for redefinition
-     * we need to change how we are passing the data to the children */
-    order_t* order_list = (order_t*)shm_begin + N_DIANOMEIS + N_PSISTES;
+        fatal("children could not attach to shared memory");
+    /* Configuring the pointers to shared memory */
+    order_t* order_list = (order_t*)shm_begin;
+
+    /* get the next empty position */
+    while (order_list->exists != 0)
+        order_list++;
+
+    *order_list = incoming;
 
     /* pizza sum */
     counter = order_list->m_num + order_list->p_num + order_list->s_num;

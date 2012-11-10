@@ -4,18 +4,7 @@
  * There is absolutely no warranty
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>	
-
-#define MAXORDER 5
-#define PATH "socketfile"
-
-/* Declaration of boolean type */
-typedef enum { false, true } bool;
+#include "pizza.h"
 
 /* function to clear the input buffer */
 int clear_input_buffer(void) {
@@ -23,14 +12,6 @@ int clear_input_buffer(void) {
     while (((ch = getchar()) != EOF) && (ch != '\n')) /* void */;
     return ch;
 }
-
-/* Struct for the pizza order */
-typedef struct {
-    int m_num;
-    int p_num;
-    int s_num;
-    bool distance;
-} order_t;
 
 /* function that print	s the correct order format */
 void order_format() {
