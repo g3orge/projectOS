@@ -40,6 +40,16 @@ void fatal(char *message) {
     exit(EXIT_FAILURE);
 }
 
+void log(char *message) {
+    /* the function to log messages from children */
+    FILE *fd;
+    time_t raw_time;
+    time(&raw_time);
+    fd = fopen("logfile", "a");
+    fprintf(fd, "[%d] --- %s --- %s", (int)getpid(), message, ctime(&raw_time));
+    fclose(fd);
+}
+
 void handler(int sig_num) {
     /* Decrement the counter, this is for the order handling
      * function to see how many pizzas are ready */
@@ -49,6 +59,9 @@ void handler(int sig_num) {
 void term_hand (int sig_num) {
     /* The handler to terminater the server */
     shmctl(shm_id, IPC_RMID, NULL);
+    sem_unlink(SEM_NAME1);
+    sem_unlink(SEM_NAME2);
+    sem_unlink(SEM_NAME3);
     exit(EXIT_SUCCESS);
 }
 
@@ -94,28 +107,32 @@ int main() {
     signal(SIGINT, term_hand);
 
     /* Fork off the parent process to get into deamon mode */
-    /* UNCOMMENT THIS TO WORK */
-    /* pid = fork(); */
+    pid = fork();
     if (pid == -1)
         fatal("Can't fork parent");
     if (pid > 0) {
         /* Stopping the parent proccess and just keeping the child */
         printf(">> Deamon mode <<\n");
-        /* exit(EXIT_SUCCESS); */
+        exit(EXIT_SUCCESS);
     }
 
     /* Semaphore business */
-    sem_t *cooks , *deliverers;
-    cooks = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
+    sem_t *cooks , *deliverers, *mutex;
+    cooks = sem_open(SEM_NAME1, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
     if (cooks == SEM_FAILED)
         fatal("could not create semaphore");
-    deliverers = sem_open(SEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
+    deliverers = sem_open(SEM_NAME2, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
     if (deliverers == SEM_FAILED)
+        fatal("could not create semaphore");
+    mutex = sem_open(SEM_NAME3, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
+    if (mutex == SEM_FAILED)
         fatal("could not create semaphore");
     /* semaphore initialization */
     if (sem_init(cooks, 1, N_PSISTES) == -1)
         fatal("could not initialize semaphore");
     if (sem_init(deliverers, 1, N_DIANOMEIS) == -1)
+        fatal("could not initialize semaphore");
+    if (sem_init(mutex, 1, 1) == -1)
         fatal("could not initialize semaphore");
 
     /* Shared memory allocation */
@@ -140,7 +157,6 @@ int main() {
 
     /* endless loop to get new connections */
     while (1) {
-        printf("Inside While (Debugging)\n");
         addr_len = sizeof(struct sockaddr_un);
         /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
@@ -149,9 +165,8 @@ int main() {
         incoming.exists = 1;
         /* close connection with this client */
         close(new_conn);
-        printf("%d\n",incoming.m_num);
 
-        /* pid = fork(); */
+        pid = fork();
         if (pid == 0)
             break;
     }
@@ -172,17 +187,21 @@ int main() {
     /* Configuring the pointers to shared memory */
     order_t* order_list = (order_t*)shm_begin;
 
-    /* get the next empty position */
+    /* get the next empty position in the shared memory */
+    sem_wait(mutex);
     while (order_list->exists != 0)
         order_list++;
+    sem_post(mutex);
 
     *order_list = incoming;
+    log("order in shared memory");
 
     /* pizza sum */
     counter = order_list->m_num + order_list->p_num + order_list->s_num;
     if (counter == 0)
         fatal("No pizza");
 
+    /* distribute pizzas in individual forks */
     while (order_list->m_num != 0) {
         (order_list->m_num)--;
         /* Margarita type */
@@ -218,6 +237,7 @@ int main() {
         order_list->status1 = 1;
         order_list->status2 = 0;
 
+        log("ready to delivery");
         /* DELIVERY */
         sem_wait(deliverers);
         delivery(order_list->time);
@@ -225,15 +245,23 @@ int main() {
         order_list->status2 = 1;
         /* Done. Give back the deliverer */
         sem_post(deliverers);
+        log("delivered");
 
         /* detaching from shared memory */
         if (shmdt(shm_begin) == -1)
             fatal("order could not detach from shared memory");
+
+        /* closing semaphores */
+        sem_close(cooks);
+        sem_close(deliverers);
+        sem_close(mutex);
 	
-        exit(EXIT_SUCCESS);
+        /* THIS IS WHERE IT FREEZES */
+        exit(EXIT_FAILURE);
     }
 
     /* FROM HERE INDIVIDUAL PIZZAS */
+    log("ready to get cooked");
 
     /* cooking */
     sem_wait(cooks);
@@ -243,6 +271,17 @@ int main() {
     kill(pid_order, SIGUSR1);
     /* Done. Semaphore up */
     sem_post(cooks);
+    log("cooked");
 
+    /* detaching from shared memory */
+    if (shmdt(shm_begin) == -1)
+        fatal("order could not detach from shared memory");
+
+    /* closing semaphores */
+    sem_close(cooks);
+    sem_close(deliverers);
+    sem_close(mutex);
+
+    exit(EXIT_SUCCESS);
     return 0;
 }

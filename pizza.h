@@ -17,7 +17,9 @@
 #define N_MAXPIZZA 3
 /* System values: key(maybe a key_t?), pizza limit, listen queue */
 #define SHM_KEY 7943
-#define SEM_NAME "onoma"
+#define SEM_NAME1 "mageires"
+#define SEM_NAME2 "pizzaguys"
+#define SEM_NAME3 "onoma"
 #define LIMIT 200
 #define QUEUE 5
 #define PATH "/tmp/pizza-server1547809"
