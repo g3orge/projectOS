@@ -157,18 +157,21 @@ int main(int argc, char **argv) {
         /* print out the order */
         print_order(order);
 
-         while (( confirm != 'y' ) && ( confirm !='n')) {
-	    printf("\n confirm? [y/n] :");
-	    clear_input_buffer();
-	    confirm = getchar();
-	    if ( confirm == 'y' ) 
-                break;
-            else if ( confirm == 'n' ) 
-                order = make_order(); 
-        }
-    
-        if (confirm=='y')
+	if (confirm=='y')
             break;
+	
+        do {
+	  printf("\n confirm? [y/n] :");
+	    
+	  clear_input_buffer();
+	  confirm = getchar();
+	  if ( confirm == 'y' ) 
+              break;
+          else if ( confirm == 'n' ) 
+              order = make_order();
+	    
+       } while (( confirm != 'y' ) && ( confirm !='n'));
+    
     }
     
     if (order.m_num + order.p_num + order.s_num > N_MAXPIZZA)
