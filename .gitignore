@@ -8,7 +8,8 @@
 a.out
 server
 c
-s
+cl
+server
 
 # Compiled Object files
 *.slo
