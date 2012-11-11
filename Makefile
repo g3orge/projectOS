@@ -17,7 +17,7 @@ client: client.c pizza.h
 	$(COMP) $(WARN) client.c -o client
 
 clean:
-	-@rm server a.out cl 2>/dev/null || true
+	-@rm server a.out client 2>/dev/null || true
 
 test:
 	# Running run_tests.sh

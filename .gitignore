@@ -7,9 +7,8 @@
 # Compiled files
 a.out
 server
-c
 cl
-server
+client
 
 # Compiled Object files
 *.slo
