@@ -173,7 +173,6 @@ int main() {
         /* close connection with this client */
         close(new_conn);
 
-        kill(getpid(), SIGCHLD);
         pid = fork();
         if (pid == 0)
             break;
@@ -217,21 +216,21 @@ int main() {
         pizza_type = 'm';
         pid_order = fork();
         if (pid_order == 0)
-            break;
-    }
+            goto cooking;
+    }	
     while (order_list->p_num != 0) {
         (order_list->p_num)--;
         pizza_type = 'p';
         pid_order = fork();
         if (pid_order == 0)
-            break;
+            goto cooking ;
     }
     while (order_list->s_num != 0) {
         (order_list->s_num)--;
         pizza_type = 's';
         pid_order = fork();
         if (pid_order == 0)
-            break;
+            goto cooking ;
     }
 
     if (pid_order > 0) {
@@ -269,6 +268,7 @@ int main() {
     }
 
     /* FROM HERE INDIVIDUAL PIZZAS */
+    cooking:
     log("ready to get cooked");
 
     /* cooking */

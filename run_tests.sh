@@ -7,7 +7,6 @@
 # executable = client 
 # number of repetitions : 100
     
-./server;
 sleep 0.5;
 if [ $1 ]; then 
     n=$1;
