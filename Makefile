@@ -14,7 +14,7 @@ server: pizza_server.c pizza.h
 	$(COMP) $(WARN) pizza_server.c -o server $(FLAGS)
 
 client: client.c pizza.h
-	$(COMP) $(WARN) client.c -o cl
+	$(COMP) $(WARN) client.c -o client
 
 clean:
 	-@rm server a.out cl 2>/dev/null || true
