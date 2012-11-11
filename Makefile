@@ -9,6 +9,7 @@ WARN=-w
 FLAGS=-pthread
 
 all: server client
+	echo > logfile
 
 server: pizza_server.c pizza.h
 	$(COMP) $(WARN) pizza_server.c -o server $(FLAGS)
@@ -22,3 +23,8 @@ clean:
 test:
 	# Running run_tests.sh
 	. run_tests.sh
+
+kill:
+	# Number of server processes:
+	-@pgrep server | wc -l
+	killall server
