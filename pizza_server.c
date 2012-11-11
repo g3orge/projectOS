@@ -48,12 +48,6 @@ void log(char *message) {
     fclose(fd);
 }
 
-void handler(int sig_num) {
-    /* Decrement the counter, this is for the order handling
-     * function to see how many pizzas are ready */
-    counter--;
-}
-
 void zombiehandler(int sig_num) {
     /* The SIGCHLD handler to reap zombies */
     int status;
@@ -181,6 +175,9 @@ int main() {
     pid_t pid_order;
     char pizza_type = 'n';
 
+    /* ignoring the child signal */
+    signal(SIGCHLD, SIG_IGN);
+
     /* configure shared memory for every child proccess  */
     shm_id = shmget(SHM_KEY, size , 0600);
     if (shm_id == -1)          
@@ -232,12 +229,16 @@ int main() {
 
     if (pid_order > 0) {
         /* Code for complete order handling */
-        signal(SIGUSR1, handler);
+
 
         /* set "cooking" status */
         order_list->status2 = 1;
 
-        while (counter != 0) { /* wait */ }
+        while (counter != 0) {
+            int status;
+            wait(&status);
+            counter--;
+        }
         /* set "cooked" status */
         order_list->status1 = 1;
         order_list->status2 = 0;
@@ -264,16 +265,13 @@ int main() {
         _exit(EXIT_SUCCESS);
     }
 
-    /* FROM HERE INDIVIDUAL PIZZAS */
 cooking:
+    /* FROM HERE INDIVIDUAL PIZZAS */
     log("ready to get cooked");
 
+    cook(pizza_type);
     /* cooking */
     sem_wait(cooks);
-    cook(pizza_type);
-    pid_order = getppid();
-    /* pizza ready, send the signal */
-    kill(pid_order, SIGUSR1);
     /* Done. Semaphore up */
     sem_post(cooks);
     log("cooked");
