@@ -154,11 +154,13 @@ int main(int argc, char **argv) {
 
     /* confirmation of the order */
     for(;;) {
+	
+	if (confirm=='y')
+    	    break;
+
         /* print out the order */
         print_order(order);
 
-        if (confirm=='y')
-            break;
 
         do {
             printf("\n confirm? [y/n] :");
