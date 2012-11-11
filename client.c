@@ -5,22 +5,53 @@
  */
 
 #include "pizza.h"
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int kbhit(void)
+{
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+   
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+   
+    ch = getchar();
+   
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+   
+    if(ch != EOF)
+    {
+      ungetc(ch, stdin);
+      return 1;
+    }
+   
+    return 0;
+}
 
 /* function to clear the input buffer */
 int clear_input_buffer(void) {
     int ch;
-    while (((ch = getchar()) != EOF) && (ch != '\n')) /* void */;
+    if (kbhit())
+        while (((ch = getchar()) != EOF) && (ch != '\n')) /* void */;
     return ch;
 }
 
 /* function that print	s the correct order format */
 void order_format() {
-    printf("\nOrder format :$ client <arg1> <arg2> <arg3> <arg4> <arg5> ");
+    printf("\nOrder format :$ client <arg1> <arg2> <arg3> <arg4> ");
     printf("\n<arg1> : the number of daisy pizzas you want to order ");
     printf("\n<arg2> : the number of peperoni pizzas you want to order ");
     printf("\n<arg3> : the number of special pizzas you want to order ");
     printf("\n<arg4> : your distance from the pizza server ");
-    printf(" ( 't_l' for a long distance 't_s' for short distance) ");
+    printf(" ( 'l' for a long distance 's' for short distance) ");
     printf("\n\nYour order should have the exact format as shown above\n\n");
 
 }
@@ -116,12 +147,11 @@ int main(int argc, char **argv) {
     order_t order;
 
     /* auxiliary variables */
-    char confirm ;
+    char confirm='n' ;
     int i;
 
     int client_sd; 
     struct sockaddr_un serv_addr;
-
     /* parsing arguments */
     if ( argc == 1 ) 
         order = make_order();
@@ -133,18 +163,21 @@ int main(int argc, char **argv) {
         else 
             fatal(1,"Some fields of the order are missing\n");
     }
-    else if ( argc > 5 ) {
-        fatal(1,"Wrong input format\n");
-    }
+
+/*    else if ( argc > 5 )
+*       fatal(1,"Wrong input format\n");*/
     /* right case */
     else {
-        if (( argv[4] != "l" ) && ( argv[4] != "s"))
-            fatal(1,"Wrong input format");
+	
+        if ((strcmp(argv[4], "l")) && (strcmp(argv[4], "s")))
+	    fatal(1,"Wrong input format");
+	
+
         else {
             order.m_num = atoi(argv[1]);
             order.p_num = atoi(argv[2]);
             order.s_num = atoi(argv[3]);
-            if ( argv[4] == "l" )
+            if  (strcmp(argv[4], "l") == 0)
                 order.time = torf(1);
             else
                 order.time = torf(0);
@@ -164,8 +197,9 @@ int main(int argc, char **argv) {
 
         do {
             printf("\n confirm? [y/n] :");
-
-            clear_input_buffer();
+			    
+	    clear_input_buffer();
+          
             confirm = getchar();
             if ( confirm == 'y' ) 
                 break;
