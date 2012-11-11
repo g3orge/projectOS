@@ -17,12 +17,14 @@ fi
 if [[ -x $2 ]]; then
 
     for ((i=1;i<=n;i++))
-    do
-        ./$2 rand  # call the client as specified by second argument
-        sleep 0.2  # just a little delay in order 
+        do
+            ./$2 rand  # call the client as specified by second argument
+            sleep 0.2  # just a little delay in order 
 		   # to have the rand function generate
 		   # different orders
-    done 
+	
+	echo "Order $i sent ";
+        done 
 else
     if [[ -x client ]]; then
  
@@ -32,9 +34,12 @@ else
             sleep 0.2      # just a little delay in order 
 		           # to have the rand function generate
 		           # different orders
+	
+	echo "Order $i sent ";
         done 
     else
 	echo "specify the name of the executable";
     fi	
 	
 fi
+
