@@ -269,9 +269,9 @@ cooking:
     /* FROM HERE INDIVIDUAL PIZZAS */
     log("ready to get cooked");
 
-    cook(pizza_type);
-    /* cooking */
     sem_wait(cooks);
+    /* cooking */
+    cook(pizza_type);
     /* Done. Semaphore up */
     sem_post(cooks);
     log("cooked");
