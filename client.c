@@ -6,33 +6,31 @@
 
 #include "pizza.h"
 #include <termios.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 int kbhit(void)
 {
     struct termios oldt, newt;
     int ch;
     int oldf;
-   
+
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-   
+
     ch = getchar();
-   
+
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
-   
+
     if(ch != EOF)
     {
-      ungetc(ch, stdin);
-      return 1;
+        ungetc(ch, stdin);
+        return 1;
     }
-   
+
     return 0;
 }
 
@@ -58,7 +56,6 @@ void order_format() {
 
 /* function that prints order details */
 void print_order(order_t  order) {
-
     printf("\n Your order \n %i daisy pizzas", order.m_num);
     printf("\n %i peperoni pizzas", order.p_num); 
     printf("\n %i special pizzas", order.s_num); 
@@ -164,14 +161,14 @@ int main(int argc, char **argv) {
             fatal(1,"Some fields of the order are missing\n");
     }
 
-/*    else if ( argc > 5 )
-*       fatal(1,"Wrong input format\n");*/
+    /*    else if ( argc > 5 )
+     *       fatal(1,"Wrong input format\n");*/
     /* right case */
     else {
-	
+
         if ((strcmp(argv[4], "l")) && (strcmp(argv[4], "s")))
-	    fatal(1,"Wrong input format");
-	
+            fatal(1,"Wrong input format");
+
 
         else {
             order.m_num = atoi(argv[1]);
@@ -187,9 +184,9 @@ int main(int argc, char **argv) {
 
     /* confirmation of the order */
     for(;;) {
-	
-	if (confirm=='y')
-    	    break;
+
+        if (confirm=='y')
+            break;
 
         /* print out the order */
         print_order(order);
@@ -197,9 +194,9 @@ int main(int argc, char **argv) {
 
         do {
             printf("\n confirm? [y/n] :");
-			    
-	    clear_input_buffer();
-          
+
+            clear_input_buffer();
+
             confirm = getchar();
             if ( confirm == 'y' ) 
                 break;
@@ -210,8 +207,8 @@ int main(int argc, char **argv) {
 
     }
 
-    if (order.m_num + order.p_num + order.s_num > N_MAXPIZZA)
-        fatal(0,"Very big order, acceptable numbers (0-3 pizzas)");
+    if ((order.m_num + order.p_num + order.s_num > N_MAXPIZZA) || (order.m_num + order.p_num + order.s_num == 0))
+        fatal(0,"acceptable numbers (1-3 pizzas)");
 
     if (order.m_num<0  || order.p_num<0  ||  order.s_num<0 ) 
         fatal(0,"Acceptable numbers (0-3 pizzas)");

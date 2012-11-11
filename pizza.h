@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h> 
+#include <unistd.h>
+#include <fcntl.h>
 /* Pizza default values */ 
 #define TIME_MARGARITA 10
 #define TIME_PEPPERONI 12

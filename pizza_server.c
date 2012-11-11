@@ -15,8 +15,6 @@
 #include <time.h>
 #include <signal.h>
 #include <semaphore.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -81,7 +79,6 @@ void cook(char t) {
         usleep(TIME_SPECIAL);
     else
         fatal("Wrong input on cook function");
-    /* The cook functions does not change the statuses of the orders */
 }
 
 void delivery(bool d) {
@@ -104,7 +101,7 @@ int main() {
     /* unix socket address declarations and lengths */
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len;
-    
+
     /* Shared memory size: order number limit + status buffers */
     int size = LIMIT * sizeof(order_t);
 
@@ -173,7 +170,6 @@ int main() {
         /* close connection with this client */
         close(new_conn);
 
-        kill(getpid(), SIGCHLD);
         pid = fork();
         if (pid == 0)
             break;
@@ -184,7 +180,7 @@ int main() {
     /* new pid for the order sub-proccess */
     pid_t pid_order;
     char pizza_type = 'n';
-	
+
     /* configure shared memory for every child proccess  */
     shm_id = shmget(SHM_KEY, size , 0600);
     if (shm_id == -1)          
@@ -217,21 +213,21 @@ int main() {
         pizza_type = 'm';
         pid_order = fork();
         if (pid_order == 0)
-            break;
-    }
+            goto cooking;
+    }	
     while (order_list->p_num != 0) {
         (order_list->p_num)--;
         pizza_type = 'p';
         pid_order = fork();
         if (pid_order == 0)
-            break;
+            goto cooking;
     }
     while (order_list->s_num != 0) {
         (order_list->s_num)--;
         pizza_type = 's';
         pid_order = fork();
         if (pid_order == 0)
-            break;
+            goto cooking;
     }
 
     if (pid_order > 0) {
@@ -264,11 +260,12 @@ int main() {
         sem_close(cooks);
         sem_close(deliverers);
         sem_close(mutex);
-	
+
         _exit(EXIT_SUCCESS);
     }
 
     /* FROM HERE INDIVIDUAL PIZZAS */
+cooking:
     log("ready to get cooked");
 
     /* cooking */
