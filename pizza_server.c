@@ -103,6 +103,7 @@ int main() {
     /* signal handlers */
     signal(SIGINT, term_hand);
     signal(SIGCHLD, zombiehandler);
+    signal(SIGALRM, cokehandler);
 
     /* Fork off the parent process to get into deamon mode */
     pid = fork();
@@ -175,8 +176,9 @@ int main() {
     pid_t pid_order;
     char pizza_type = 'n';
 
-    /* ignoring the child signal */
+    /* ignoring the unnecessary signals */
     signal(SIGCHLD, SIG_IGN);
+    signal(SIGALRM, SIG_IGN);
 
     /* configure shared memory for every child proccess  */
     shm_id = shmget(SHM_KEY, size , 0600);
@@ -230,7 +232,6 @@ int main() {
     if (pid_order > 0) {
         /* Code for complete order handling */
 
-
         /* set "cooking" status */
         order_list->status2 = 1;
 
@@ -252,6 +253,9 @@ int main() {
         /* Done. Give back the deliverer */
         sem_post(deliverers);
         log("delivered");
+
+        /* delete the order */
+        order_list->exists = 0;
 
         /* detaching from shared memory */
         if (shmdt(shm_begin) == -1)

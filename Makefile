@@ -22,9 +22,9 @@ clean:
 
 test:
 	# Running run_tests.sh
-	. run_tests.sh
+	./run_tests.sh
 
 kill:
-	# Number of server processes:
+	-@echo "Number of server processes:"
 	-@pgrep server | wc -l
 	killall server
