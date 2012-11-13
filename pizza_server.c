@@ -48,6 +48,14 @@ void log(char *message) {
     fclose(fd);
 }
 
+void cokehandler(int sig_num) {
+    /* The SIGALARM handler to arrange the coke sendings */
+    
+    FILE *fd;
+    fd = fopen("logfile", "a");
+    fprintf(fd,"[%d] aaaa---aaaa \n",(int)getpid());
+    fclose(fd);
+}    
 void zombiehandler(int sig_num) {
     /* The SIGCHLD handler to reap zombies */
     int status;
@@ -66,11 +74,11 @@ void term_hand (int sig_num) {
 void cook(char t) {
     /* The waiting function for the cooking */
     if (t == 'm')
-        usleep(TIME_MARGARITA);
+        sleep(1);
     else if (t == 'p')
-        usleep(TIME_PEPPERONI);
+        sleep(2);
     else if (t == 's')
-        usleep(TIME_SPECIAL);
+        sleep(3);
     else
         fatal("Wrong input on cook function");
 }
@@ -103,7 +111,7 @@ int main() {
     /* signal handlers */
     signal(SIGINT, term_hand);
     signal(SIGCHLD, zombiehandler);
-    signal(SIGALRM, cokehandler);
+    //signal(SIGALRM, cokehandler);
 
     /* Fork off the parent process to get into deamon mode */
     pid = fork();
@@ -171,14 +179,16 @@ int main() {
     }
 
     /* Children operate below */
+    /* variables for elapsed time counting */
+    struct timeval begin, end;
 
     /* new pid for the order sub-proccess */
     pid_t pid_order;
     char pizza_type = 'n';
-
+    gettimeofday(&begin, NULL);		
     /* ignoring the unnecessary signals */
     signal(SIGCHLD, SIG_IGN);
-    signal(SIGALRM, SIG_IGN);
+    signal(SIGALRM, cokehandler);
 
     /* configure shared memory for every child proccess  */
     shm_id = shmget(SHM_KEY, size , 0600);
@@ -256,7 +266,12 @@ int main() {
 
         /* delete the order */
         order_list->exists = 0;
-
+	gettimeofday(&end, NULL);
+	FILE *fd;
+        fd = fopen("logfile", "a");
+	fprintf(fd,"[%d] --- elapsed time : %ld microseconds\n",(int)getpid(),
+	((end.tv_sec * 1000000 + end.tv_usec) - (begin.tv_sec * 1000000 + begin.tv_usec)));	
+     	fclose(fd);
         /* detaching from shared memory */
         if (shmdt(shm_begin) == -1)
             fatal("order could not detach from shared memory");
