@@ -103,7 +103,7 @@ int main() {
     /* signal handlers */
     signal(SIGINT, term_hand);
     signal(SIGCHLD, zombiehandler);
-    signal(SIGALRM, cokehandler);
+    //signal(SIGALRM, cokehandler);
 
     /* Fork off the parent process to get into deamon mode */
     pid = fork();
@@ -171,7 +171,8 @@ int main() {
     }
 
     /* Children operate below */
-
+    struct timeval begin,end;
+    gettimeofday(&begin, NULL);
     /* new pid for the order sub-proccess */
     pid_t pid_order;
     char pizza_type = 'n';
@@ -253,6 +254,11 @@ int main() {
         /* Done. Give back the deliverer */
         sem_post(deliverers);
         log("delivered");
+	gettimeofday(&end,NULL);
+	FILE *fd;
+        fd = fopen("logfile", "a");
+        fprintf(fd, "[%d] --- elapsed time : %ld ", getpid(), (end.tv_sec*1000000 + end.tv_usec) -(begin.tv_sec*1000000 + begin.tv_usec));
+        fclose(fd);
 
         /* delete the order */
         order_list->exists = 0;
