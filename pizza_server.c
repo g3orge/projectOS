@@ -179,14 +179,10 @@ int main() {
     }
 
     /* Children operate below */
-<<<<<<< HEAD
     /* variables for elapsed time counting */
     struct timeval begin, end;
 
-=======
-    struct timeval begin,end;
     gettimeofday(&begin, NULL);
->>>>>>> b49c222dbb1d2f96c24a9e78cac6823a0b3cc8f2
     /* new pid for the order sub-proccess */
     pid_t pid_order;
     char pizza_type = 'n';
@@ -271,17 +267,11 @@ int main() {
 	gettimeofday(&end,NULL);
 	FILE *fd;
         fd = fopen("logfile", "a");
-        fprintf(fd, "[%d] --- elapsed time : %ld ", getpid(), (end.tv_sec*1000000 + end.tv_usec) -(begin.tv_sec*1000000 + begin.tv_usec));
+        fprintf(fd, "[%d] --- elapsed time : %ld microseconds \n", getpid(), (end.tv_sec*1000000 + end.tv_usec) -(begin.tv_sec*1000000 + begin.tv_usec));
         fclose(fd);
 
         /* delete the order */
         order_list->exists = 0;
-	gettimeofday(&end, NULL);
-	FILE *fd;
-        fd = fopen("logfile", "a");
-	fprintf(fd,"[%d] --- elapsed time : %ld microseconds\n",(int)getpid(),
-	((end.tv_sec * 1000000 + end.tv_usec) - (begin.tv_sec * 1000000 + begin.tv_usec)));	
-     	fclose(fd);
         /* detaching from shared memory */
         if (shmdt(shm_begin) == -1)
             fatal("order could not detach from shared memory");
