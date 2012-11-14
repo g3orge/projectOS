@@ -13,10 +13,10 @@
 #define TIME_SPECIAL 15
 #define T_KONTA 5
 #define T_MAKRIA 10
-#define T_VERYLONG 2 /* 2 seconds */
+#define T_VERYLONG 50
 #define N_DIANOMEIS 10
 #define N_PSISTES 10
-#define N_MAXPIZZA 300
+#define N_MAXPIZZA 3
 /* System values: key(maybe a key_t?), pizza limit, listen queue */
 #define SHM_KEY 7843
 #define SEM_NAME1 "mageires"
@@ -35,8 +35,10 @@ typedef struct {
     short m_num;
     short p_num;
     short s_num;
+    /* for distance [short|long] */
     bool time;
     bool status1;
     bool status2;
-    int start_time; 
+    /* time of order */
+    int start_time;
 } order_t;

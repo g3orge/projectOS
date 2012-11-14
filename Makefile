@@ -25,6 +25,6 @@ test:
 	./run_tests.sh
 
 kill:
-	-@echo "Number of server processes:"
+	-@echo "Number of server processes: (correct: 2)"
 	-@pgrep server | wc -l
 	killall server
