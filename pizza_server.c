@@ -181,8 +181,8 @@ int main() {
     struct timeval begin, end;
     gettimeofday(&begin, NULL);
     /* initialization for the coca cola process to handle */
-    incoming.start_time = begin.tv_sec;
-
+    incoming.start_sec = begin.tv_sec; 
+    incoming.start_usec = begin.tv_usec;
     /* new pid for the order sub-proccess */
     pid_t pid_order;
     char pizza_type = 'n';
@@ -265,7 +265,7 @@ int main() {
         gettimeofday(&end,NULL);
         FILE *fd;
         fd = fopen("logfile", "a");
-        fprintf(fd, "[%d] --- elapsed time: %ld seconds and %ld microseconds \n",
+        fprintf(fd, "[%d] -^- elapsed time: %ld seconds and %ld microseconds \n",
                 getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
         fclose(fd);
 
@@ -328,24 +328,25 @@ cocacola:
         gettimeofday(&test, NULL );
         /* long int test_time = test.tv_sec*1000000 + test.tv_usec; */
 
+        int j = 0; 
         while (order_list2->exists == true) {
-
-            /* substract orders start time from current test time in order to get the elapsed time */
-            if ( (test.tv_sec - order_list2->start_time) > T_VERYLONG) {
+	    j++;     
+	    /* substract orders start time from current test time in order to get the elapsed time */
+	    if ((test.tv_sec - order_list2->start_sec)*10^6 + 
+		(test.tv_usec - order_list2->start_usec) >= 3000) {
+	    	
                 FILE *coke;
                 coke = fopen("logfile" , "a"); 
-                fprintf(coke, "coca cola for order [] elapsed time : %ld seconds \n",
-                        test.tv_sec - order_list2->start_time);
+                fprintf(coke, "### coca cola for order [%d] elapsed time : [%ld] seconds, [%ld] microseconds \n",
+			j,test.tv_sec -order_list2->start_sec,test.tv_usec - order_list2->start_usec);
                 fclose(coke);
             }
 
             order_list2++;
         }
-        sleep(1);
+        usleep(T_VERYLONG);
     }
     /* detaching from shared memory */
-    if (shmdt(order_list2)== -1)
-        fatal("could not detach from shared memory");
     if (shmdt(shm_begin2) == -1)
         fatal("could not detach from shared memory");
 }
