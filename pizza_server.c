@@ -244,6 +244,9 @@ int main() {
     if (pid_order > 0) {
         /* Code for complete order handling */
 
+        /* set pid of the handling process */
+        order_list->mypid = getpid();
+
         /* set "cooking" status */
         order_list->status2 = 1;
 
@@ -340,13 +343,14 @@ cocacola:
         while (order_list2->exists == true) {
             j++;
             /* substract orders start time from current test time to get the elapsed time */
-            if ( (test.tv_sec - order_list2->start_sec)*10^6 +
+            if ( (test.tv_sec - order_list2->start_sec)* 1000000 +
                     (test.tv_usec - order_list2->start_usec) >= 3000) {
                 /* open file to write into */
                 FILE *coke;
                 coke = fopen("logfile", "a");
-                fprintf(coke, "### coca cola for order [%d] elapsed time: %ld seconds and %ld microseconds\n",
-                        j, (test.tv_sec - order_list2->start_sec), (test.tv_usec - order_list2->start_usec));
+
+                fprintf(coke, "[%d] ### coca cola for this order. Elapsed time: (%ld seconds and %ld microseconds)\n",
+                        order_list2->mypid , (test.tv_sec - order_list2->start_sec), (test.tv_usec - order_list2->start_usec));
                 fclose(coke);
             }
             order_list2++;

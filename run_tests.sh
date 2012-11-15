@@ -39,7 +39,7 @@ else
         for (( i=1; i<=n; i++ ))
         do
             ./client rand  # call the client as default
-            #sleep 0.2     # sleep a bit to get different numbers in the PRG
+            sleep 0.01     # sleep a bit to get different numbers in the PRG
             echo "Order $i sent!";
         done 
     else
