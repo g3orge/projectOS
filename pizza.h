@@ -18,7 +18,7 @@
 #define N_PSISTES 10
 #define N_MAXPIZZA 3
 /* change this if server can't connect to shared memory */
-#define SHM_KEY 7943
+#define SHM_KEY 8843
 #define SEM_NAME1 "mageires"
 #define SEM_NAME2 "pizzaguys"
 #define SEM_NAME3 "onoma"
@@ -44,4 +44,6 @@ typedef struct {
     /* time variables */
     int start_sec;
     int start_usec;
+    /* to have the pid of the process that handles it */
+    pid_t mypid;
 } order_t;
