@@ -17,11 +17,12 @@
 #define N_DIANOMEIS 10
 #define N_PSISTES 10
 #define N_MAXPIZZA 3
-/* System values: key(maybe a key_t?), pizza limit, listen queue */
-#define SHM_KEY 7843
+/* change this if server can't connect to shared memory */
+#define SHM_KEY 7943
 #define SEM_NAME1 "mageires"
 #define SEM_NAME2 "pizzaguys"
 #define SEM_NAME3 "onoma"
+/* pizza limit, listen queue */
 #define LIMIT 200
 #define QUEUE 5
 #define PATH "/tmp/pizza-server1547809"
@@ -32,6 +33,7 @@ typedef enum { false, true } bool;
 /* Struct for the pizza order */
 typedef struct {
     bool exists;
+    /* sums of pizza kinds */
     short m_num;
     short p_num;
     short s_num;
@@ -39,6 +41,7 @@ typedef struct {
     bool time;
     bool status1;
     bool status2;
-    /* time of order */
-    int start_time;
+    /* time variables */
+    int start_sec;
+    int start_usec;
 } order_t;

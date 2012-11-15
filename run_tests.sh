@@ -7,7 +7,7 @@
 
 # if no arguments are giver default values are : 
 # executable = client 
-# number of repetitions : 100
+# number of repetitions = 100
 
 pgrep -l server > /dev/null
 if [ $? -eq 1 ]; then
@@ -17,7 +17,7 @@ if [ $? -eq 1 ]; then
     return
     kill $$
 fi
-# Get the first argument, how many repeats
+# Get the first argument, how many repetitions
 if [ $1 ]; then 
     n=$1;
 else
@@ -39,9 +39,7 @@ else
         for (( i=1; i<=n; i++ ))
         do
             ./client rand  # call the client as default
-            sleep 0.2      # just a little delay in order
-            # to have the rand function generate
-            # different orders
+            #sleep 0.2     # sleep a bit to get different numbers in the PRG
             echo "Order $i sent!";
         done 
     else

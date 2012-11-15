@@ -54,7 +54,7 @@ void zombiehandler(int sig_num) {
     wait(&status);
 }
 
-void term_hand (int sig_num) {
+void term_hand(int sig_num) {
     /* The handler to terminater the server */
     shmctl(shm_id, IPC_RMID, NULL);
     sem_unlink(SEM_NAME1);
@@ -112,6 +112,7 @@ int main() {
     if (pid > 0) {
         /* Stopping the parent proccess and just keeping the child */
         printf(">> Deamon mode <<\n");
+        printf("Use 'make kill' to kill the server\n");
         exit(EXIT_SUCCESS);
     }
 
@@ -180,9 +181,10 @@ int main() {
     /* variables for elapsed time counting */
     struct timeval begin, end;
     gettimeofday(&begin, NULL);
-    /* initialization for the coca cola process to handle */
+    /* initialization for the coca cola process */
     incoming.start_sec = begin.tv_sec; 
     incoming.start_usec = begin.tv_usec;
+
     /* new pid for the order sub-proccess */
     pid_t pid_order;
     char pizza_type = 'n';
@@ -224,6 +226,7 @@ int main() {
     }	
     while (order_list->p_num != 0) {
         (order_list->p_num)--;
+        /* Pepperoni */
         pizza_type = 'p';
         pid_order = fork();
         if (pid_order == 0)
@@ -231,6 +234,7 @@ int main() {
     }
     while (order_list->s_num != 0) {
         (order_list->s_num)--;
+        /* Special */
         pizza_type = 's';
         pid_order = fork();
         if (pid_order == 0)
@@ -243,6 +247,7 @@ int main() {
         /* set "cooking" status */
         order_list->status2 = 1;
 
+        /* wait for the orders to get cooked */
         while (counter != 0) {
             int status;
             wait(&status);
@@ -262,6 +267,7 @@ int main() {
         /* Done. Give back the deliverer */
         sem_post(deliverers);
         log("delivered");
+
         gettimeofday(&end,NULL);
         FILE *fd;
         fd = fopen("logfile", "a");
@@ -308,42 +314,44 @@ cooking:
 
 
 cocacola:
-    /* this process periodically scans the shared memory to find overdelayed orders
-     * configure shared memory for this process   */
+    /* code for giving away coca-colas in case of dalay */
+
+    /* configure shared memory for this process */
     shm_id2 = shmget(SHM_KEY, size , 0600);
     if (shm_id2 == -1)          
         fatal("in shared memory (coca cola handling)");
     char* shm_begin2 = shmat(shm_id2, NULL, 0);
     if (shm_begin2 == (char *)-1)
-        fatal("coca cola  could not attach to shared memory");
+        fatal("coca-cola could not attach to shared memory");
 
     /* Configuring the pointers to shared memory */
     order_t* order_list2 = (order_t*)shm_begin2;
     /* set variable in order to test elapsed time of order */
     struct timeval test;
+
     /* scan the order lists */
     for(;;) {
         order_list2 = (order_t*)shm_begin2;
         /* get current test time */	
-        gettimeofday(&test, NULL );
+        gettimeofday(&test, NULL);
         /* long int test_time = test.tv_sec*1000000 + test.tv_usec; */
 
-        int j = 0; 
+        int j = 0;
         while (order_list2->exists == true) {
-	    j++;     
-	    /* substract orders start time from current test time in order to get the elapsed time */
-	    if ((test.tv_sec - order_list2->start_sec)*10^6 + 
-		(test.tv_usec - order_list2->start_usec) >= 3000) {
-	    	
+            j++;
+            /* substract orders start time from current test time to get the elapsed time */
+            if ( (test.tv_sec - order_list2->start_sec)*10^6 +
+                    (test.tv_usec - order_list2->start_usec) >= 3000) {
+                /* open file to write into */
                 FILE *coke;
-                coke = fopen("logfile" , "a"); 
-                fprintf(coke, "### coca cola for order [%d] elapsed time : [%ld] seconds, [%ld] microseconds \n",
-			j,test.tv_sec -order_list2->start_sec,test.tv_usec - order_list2->start_usec);
+                coke = fopen("logfile", "a");
+                fprintf(coke, "### coca cola for order [%d] elapsed time: %ld seconds and %ld microseconds\n",
+                        j, (test.tv_sec - order_list2->start_sec), (test.tv_usec - order_list2->start_usec));
                 fclose(coke);
             }
-
             order_list2++;
         }
+        /* wait the proper time */
         usleep(T_VERYLONG);
     }
     /* detaching from shared memory */
