@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
     }
 
     if ((order.m_num + order.p_num + order.s_num > N_MAXPIZZA) || (order.m_num + order.p_num + order.s_num == 0)) {
-        fprintf(stderr, "PRG generated zero order. Continuing...");
+        fprintf(stderr, "PRG generated zero order. Continuing...\n");
         exit(EXIT_FAILURE);
     }
 
