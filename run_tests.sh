@@ -9,7 +9,7 @@
 # executable = client 
 # number of repetitions = 100
 
-pgrep -l server > /dev/null
+ps --user `whoami` | grep "server" > /dev/null
 if [ $? -eq 1 ]; then
     echo "Server not running";
     echo "run ./server before the script";
