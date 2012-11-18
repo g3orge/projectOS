@@ -207,8 +207,10 @@ int main(int argc, char **argv) {
 
     }
 
-    if ((order.m_num + order.p_num + order.s_num > N_MAXPIZZA) || (order.m_num + order.p_num + order.s_num == 0))
-        fatal(0,"acceptable numbers (1-3 pizzas)");
+    if ((order.m_num + order.p_num + order.s_num > N_MAXPIZZA) || (order.m_num + order.p_num + order.s_num == 0)) {
+        fprintf(stderr, "PRG generated zero order. Continuing...");
+        exit(EXIT_FAILURE);
+    }
 
     if (order.m_num<0  || order.p_num<0  ||  order.s_num<0 ) 
         fatal(0,"Acceptable numbers (0-3 pizzas)");
