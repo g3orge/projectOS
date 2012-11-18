@@ -2,6 +2,7 @@
 # `make` to compile all
 # `make test` to run tests
 # `make clean` to clean
+# `make kill` to kill the server processes
 
 # Options
 COMP=gcc
@@ -26,5 +27,6 @@ test:
 
 kill:
 	-@echo "Number of server processes: (correct: 2)"
-	-@pgrep server | wc -l
-	killall server
+	-@pgrep -u `whoami` server | wc -l
+	-@echo "Killing them..."
+	-@pgrep -u `whoami` server | xargs kill
