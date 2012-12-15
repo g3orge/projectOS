@@ -19,13 +19,9 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-/* Global variables */
-/* necessary signal counter */
-int counter = 0;
-int shm_id, shm_id2;
 
+/* A function to display an error message and then exit */
 void fatal(char *message) {
-    /* A function to display an error message and then exit */
     fprintf(stderr, "\a!! - Fatal error - ");
     fprintf(stderr, "%s\n", message);
     /* also writing to a logfile */
@@ -38,8 +34,8 @@ void fatal(char *message) {
     exit(EXIT_FAILURE);
 }
 
+/* The function to log messages from children */
 void log(char *message) {
-    /* the function to log messages from children */
     FILE *fd;
     time_t raw_time;
     time(&raw_time);
@@ -48,14 +44,8 @@ void log(char *message) {
     fclose(fd);
 }
 
-void zombiehandler(int sig_num) {
-    /* The SIGCHLD handler to reap zombies */
-    int status;
-    wait(&status);
-}
-
+/* The handler to terminater the server */
 void term_hand(int sig_num) {
-    /* The handler to terminater the server */
     shmctl(shm_id, IPC_RMID, NULL);
     sem_unlink(SEM_NAME1);
     sem_unlink(SEM_NAME2);
@@ -63,8 +53,18 @@ void term_hand(int sig_num) {
     exit(EXIT_SUCCESS);
 }
 
-void cook(char t) {
-    /* The waiting function for the cooking */
+/* The waiting function for the delivery */
+void delivering(bool d) {
+    if (d == false)
+        usleep(T_KONTA);
+    else if (d == true)
+        usleep(T_MAKRIA);
+    else
+        fatal("Wrong input on delivery function");
+}
+
+/* The waiting function for the cooking */
+void cooking(char t) {
     if (t == 'm')
         usleep(TIME_MARGARITA);
     else if (t == 'p')
@@ -75,35 +75,111 @@ void cook(char t) {
         fatal("Wrong input on cook function");
 }
 
-void delivery(bool d) {
-    /* The waiting function for the delivery */
-    if (d == false)
-        usleep(T_KONTA);
-    else if (d == true)
-        usleep(T_MAKRIA);
-    else
-        fatal("Wrong input on delivery function");
+/* Thread function for complete individual order handling */
+void* order_handling(void* incoming) {
+
+    int counter = 0;
+
+    /* variables for elapsed time counting */
+    struct timeval begin, end;
+    gettimeofday(&begin, NULL);
+    /* initialization for the coca cola process */
+    incoming.start_sec = begin.tv_sec; 
+    incoming.start_usec = begin.tv_usec;
+
+    log("order in shared memory");
+
+    /* pizza sum */
+    counter = incoming->m_num + incoming->p_num + incoming->s_num;
+    if (counter == 0)
+        fatal("No pizza");
+
+    /* new pid for the order sub-proccess */
+    pthread_t sub_id[counter];
+    char pizza_type = 'n';
+
+    /* distribute pizzas in individual forks */
+    int j=0;
+    while (incoming->m_num != 0) {
+        (incoming->m_num)--;
+        /* Margarita type */
+        pizza_type = 'm';
+        pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
+        /* increment the special counter */
+        j++;
+    }	
+    while (incoming->p_num != 0) {
+        (incoming->p_num)--;
+        /* Pepperoni */
+        pizza_type = 'p';
+        pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
+        /* increment the special counter */
+        j++;
+    }
+    while (incoming->s_num != 0) {
+        (incoming->s_num)--;
+        /* Special */
+        pizza_type = 's';
+        pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
+        /* increment the special counter */
+        j++;
+    }
+
+    /* set "cooking" status */
+    incoming->status2 = true;
+
+    /* TODO: join thread ?? */
+
+    /* set "cooked" status */
+    incoming->status1 = true;
+    incoming->status2 = false;
+
+    log("ready for delivery");
+
+    /* TODO: Delivery */
+
+    /* Print time */
+    gettimeofday(&end,NULL);
+    FILE *fd;
+    fd = fopen("logfile", "a");
+    fprintf(fd, "[%d] -^- elapsed time: %ld seconds and %ld microseconds \n",
+            getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
+    fclose(fd);
+
+    /* delete the order */
+    incoming->exists = false;
+
+    pthread_exit(0);
+}
+
+/* Thread function for cooking individual pizzas */
+void* cook(void* b) {
+    log("ready to get cooked");
+
+    /* TODO: cooking with cooking function */
+
+    pthread_exit(0);
 }
 
 int main() {
-    pid_t pid;
+    /* thread type declarations */
+    pthread_t id[LIMIT];
+    /* thread id counter */
     int i;
     /* socket file descriptors */
     int sd, new_conn;
     /* temporary place for incoming data */
     order_t incoming;
+    /* the main list for the orders */
+    order_t order_list[LIMIT];
+
     /* unix socket address declarations and lengths */
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len;
 
-    /* Shared memory size: order number limit + status buffers */
-    int size = LIMIT * sizeof(order_t);
-
     /* ================ END OF DECLARATIONS ===================*/
     /* signal handlers */
     signal(SIGINT, term_hand);
-    signal(SIGCHLD, zombiehandler);
-    signal(SIGALRM, SIG_IGN);
 
     /* Fork off the parent process to get into deamon mode */
     pid = fork();
@@ -115,31 +191,6 @@ int main() {
         printf("Use 'make kill' to kill the server\n");
         exit(EXIT_SUCCESS);
     }
-
-    /* Semaphore business */
-    sem_t *cooks , *deliverers, *mutex;
-    cooks = sem_open(SEM_NAME1, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
-    if (cooks == SEM_FAILED)
-        fatal("could not create semaphore");
-    deliverers = sem_open(SEM_NAME2, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
-    if (deliverers == SEM_FAILED)
-        fatal("could not create semaphore");
-    mutex = sem_open(SEM_NAME3, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 1);
-    if (mutex == SEM_FAILED)
-        fatal("could not create semaphore");
-    /* semaphore initialization */
-    if (sem_init(cooks, 1, N_PSISTES) == -1)
-        fatal("could not initialize semaphore");
-    if (sem_init(deliverers, 1, N_DIANOMEIS) == -1)
-        fatal("could not initialize semaphore");
-    if (sem_init(mutex, 1, 1) == -1)
-        fatal("could not initialize semaphore");
-
-    /* Shared memory allocation */
-    shm_id = shmget(SHM_KEY, size, 0600 | IPC_CREAT);
-    if (shm_id == -1)
-        fatal("in shared memory (parent)");
-    /* we don't need to attach here */
 
     /* Socket business */
     sd = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -155,13 +206,12 @@ int main() {
     if (listen(sd, QUEUE) == -1)
         fatal("while listening");
 
-    /* process for coca cola handling */
-    pid = fork();
-    if (pid == 0 )
-        goto cocacola;		
+    /* TODO: coca-cola */
 
     /* endless loop to get new connections */
+    i=0;
     while (1) {
+        /* get order via socket */
         addr_len = sizeof(struct sockaddr_un);
         /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
@@ -171,150 +221,15 @@ int main() {
         /* close connection with this client */
         close(new_conn);
 
-        pid = fork();
-        if (pid == 0)
-            break;
+        /* Threading */
+        pthread_create(&id[i], NULL, &order_handling, &incoming);
+
+        /* required action to counter (increment or zero) */
+        if (i < LIMIT)
+            i++;
+        else 
+            i=0;
     }
-
-    /* Children operate below */
-
-    /* variables for elapsed time counting */
-    struct timeval begin, end;
-    gettimeofday(&begin, NULL);
-    /* initialization for the coca cola process */
-    incoming.start_sec = begin.tv_sec; 
-    incoming.start_usec = begin.tv_usec;
-
-    /* new pid for the order sub-proccess */
-    pid_t pid_order;
-    char pizza_type = 'n';
-    /* ignoring the unnecessary signals */
-    signal(SIGCHLD, SIG_IGN);
-
-    /* configure shared memory for every child proccess  */
-    shm_id = shmget(SHM_KEY, size , 0600);
-    if (shm_id == -1)          
-        fatal("in shared memory (in children)");
-    char* shm_begin = shmat(shm_id, NULL, 0);
-    if (shm_begin == (char *)-1)                                                          
-        fatal("children could not attach to shared memory");
-    order_t* order_list = (order_t*)shm_begin;
-
-    /* get the next empty position in the shared memory */
-    sem_wait(mutex);
-    while (order_list->exists != false)
-        order_list++;
-    /* putting into the memory */
-    *order_list = incoming;
-    sem_post(mutex);
-
-    log("order in shared memory");
-
-    /* pizza sum */
-    counter = order_list->m_num + order_list->p_num + order_list->s_num;
-    if (counter == 0)
-        fatal("No pizza");
-
-    /* distribute pizzas in individual forks */
-    while (order_list->m_num != 0) {
-        (order_list->m_num)--;
-        /* Margarita type */
-        pizza_type = 'm';
-        pid_order = fork();
-        if (pid_order == 0)
-            goto cooking;
-    }	
-    while (order_list->p_num != 0) {
-        (order_list->p_num)--;
-        /* Pepperoni */
-        pizza_type = 'p';
-        pid_order = fork();
-        if (pid_order == 0)
-            goto cooking;
-    }
-    while (order_list->s_num != 0) {
-        (order_list->s_num)--;
-        /* Special */
-        pizza_type = 's';
-        pid_order = fork();
-        if (pid_order == 0)
-            goto cooking;
-    }
-
-    if (pid_order > 0) {
-        /* Code for complete order handling */
-
-        /* set pid of the handling process */
-        order_list->mypid = getpid();
-
-        /* set "cooking" status */
-        order_list->status2 = 1;
-
-        /* wait for the orders to get cooked */
-        while (counter != 0) {
-            int status;
-            wait(&status);
-            counter--;
-        }
-        /* set "cooked" status */
-        order_list->status1 = 1;
-        order_list->status2 = 0;
-
-        log("ready for delivery");
-
-        /* DELIVERY */
-        sem_wait(deliverers);
-        delivery(order_list->time);
-        /* setting "delivering" status */
-        order_list->status2 = 1;
-        /* Done. Give back the deliverer */
-        sem_post(deliverers);
-        log("delivered");
-
-        gettimeofday(&end,NULL);
-        FILE *fd;
-        fd = fopen("logfile", "a");
-        fprintf(fd, "[%d] -^- elapsed time: %ld seconds and %ld microseconds \n",
-                getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
-        fclose(fd);
-
-        /* delete the order */
-        order_list->exists = false;
-
-        /* detaching from shared memory */
-        if (shmdt(shm_begin) == -1)
-            fatal("order could not detach from shared memory");
-
-        /* closing semaphores */
-        sem_close(cooks);
-        sem_close(deliverers);
-        sem_close(mutex);
-
-        _exit(EXIT_SUCCESS);
-    }
-
-cooking:
-    /* FROM HERE INDIVIDUAL PIZZAS */
-    log("ready to get cooked");
-
-    sem_wait(cooks);
-    /* cooking */
-    cook(pizza_type);
-    /* Done. Semaphore up */
-    sem_post(cooks);
-    log("cooked");
-
-    /* detaching from shared memory */
-    if (shmdt(shm_begin) == -1)
-        fatal("order could not detach from shared memory");
-
-    /* closing semaphores */
-    sem_close(cooks);
-    sem_close(deliverers);
-    sem_close(mutex);
-
-    _exit(EXIT_SUCCESS);
-
 
 cocacola:
     /* code for giving away coca-colas in case of dalay */
