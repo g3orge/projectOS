@@ -45,6 +45,4 @@ typedef struct {
     /* time variables */
     int start_sec;
     int start_usec;
-    /* to have the pid of the process that handles it */
-    pid_t mypid;
 } order_t;

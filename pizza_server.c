@@ -9,16 +9,17 @@
  *    1           0   : Cooked
  *    1           1   : Delivering
  *
+ * false = 0
+ * true  = 1
  */
 
 #include "pizza.h"
+#include <pthread.h>
 #include <time.h>
 #include <signal.h>
 #include <semaphore.h>
 #include <sys/stat.h>
 #include <sys/ipc.h>
-#include <sys/shm.h>
-
 
 /* A function to display an error message and then exit */
 void fatal(char *message) {
@@ -46,10 +47,7 @@ void log(char *message) {
 
 /* The handler to terminater the server */
 void term_hand(int sig_num) {
-    shmctl(shm_id, IPC_RMID, NULL);
-    sem_unlink(SEM_NAME1);
-    sem_unlink(SEM_NAME2);
-    sem_unlink(SEM_NAME3);
+    /* TODO: cancel (and join) all the threads */
     exit(EXIT_SUCCESS);
 }
 
@@ -77,9 +75,6 @@ void cooking(char t) {
 
 /* Thread function for complete individual order handling */
 void* order_handling(void* incoming) {
-
-    int counter = 0;
-
     /* variables for elapsed time counting */
     struct timeval begin, end;
     gettimeofday(&begin, NULL);
@@ -87,37 +82,43 @@ void* order_handling(void* incoming) {
     incoming.start_sec = begin.tv_sec; 
     incoming.start_usec = begin.tv_usec;
 
-    log("order in shared memory");
+    /* Try to find a place in the order_list array */
+    short local = 0;
+    /* TODO: we need semaphores here */
+    while (order_list[local].exists == true)
+        local++;
+    order_list[local] = incoming;
 
     /* pizza sum */
-    counter = incoming->m_num + incoming->p_num + incoming->s_num;
+    short counter = 0;
+    counter = order_list[local].m_num + order_list[local].p_num + order_list[local].s_num;
     if (counter == 0)
         fatal("No pizza");
 
-    /* new pid for the order sub-proccess */
+    /* new thread id for the sub-threads (max = pizza counter) */
     pthread_t sub_id[counter];
     char pizza_type = 'n';
 
-    /* distribute pizzas in individual forks */
+    /* distribute pizzas in sub-threads */
     int j=0;
-    while (incoming->m_num != 0) {
-        (incoming->m_num)--;
+    while (order_list[local].m_num != 0) {
+        (order_list[local].m_num)--;
         /* Margarita type */
         pizza_type = 'm';
         pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
         /* increment the special counter */
         j++;
     }	
-    while (incoming->p_num != 0) {
-        (incoming->p_num)--;
+    while (order_list[local].p_num != 0) {
+        (order_list[local].p_num)--;
         /* Pepperoni */
         pizza_type = 'p';
         pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
         /* increment the special counter */
         j++;
     }
-    while (incoming->s_num != 0) {
-        (incoming->s_num)--;
+    while (order_list[local].s_num != 0) {
+        (order_list[local].s_num)--;
         /* Special */
         pizza_type = 's';
         pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
@@ -126,13 +127,13 @@ void* order_handling(void* incoming) {
     }
 
     /* set "cooking" status */
-    incoming->status2 = true;
+    order_list[local].status2 = true;
 
-    /* TODO: join thread ?? */
+    /* TODO: join threads */
 
     /* set "cooked" status */
-    incoming->status1 = true;
-    incoming->status2 = false;
+    order_list[local].status1 = true;
+    order_list[local].status2 = false;
 
     log("ready for delivery");
 
@@ -143,17 +144,18 @@ void* order_handling(void* incoming) {
     FILE *fd;
     fd = fopen("logfile", "a");
     fprintf(fd, "[%d] -^- elapsed time: %ld seconds and %ld microseconds \n",
-            getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
+          getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
     fclose(fd);
 
     /* delete the order */
-    incoming->exists = false;
+    order_list[local].exists = false;
 
+    /* exit successfully */
     pthread_exit(0);
 }
 
 /* Thread function for cooking individual pizzas */
-void* cook(void* b) {
+void* cook(void* pizza_type) {
     log("ready to get cooked");
 
     /* TODO: cooking with cooking function */
@@ -164,14 +166,14 @@ void* cook(void* b) {
 int main() {
     /* thread type declarations */
     pthread_t id[LIMIT];
+    /* the main list for the orders */
+    order_t order_list[LIMIT];
+    /* temporary place for incoming data */
+    order_t incoming;
     /* thread id counter */
     int i;
     /* socket file descriptors */
     int sd, new_conn;
-    /* temporary place for incoming data */
-    order_t incoming;
-    /* the main list for the orders */
-    order_t order_list[LIMIT];
 
     /* unix socket address declarations and lengths */
     struct sockaddr_un server_addr, client_addr;
@@ -181,7 +183,7 @@ int main() {
     /* signal handlers */
     signal(SIGINT, term_hand);
 
-    /* Fork off the parent process to get into deamon mode */
+    /* Fork off the parent process to get into deamon mode (background) */
     pid = fork();
     if (pid == -1)
         fatal("Can't fork parent");
@@ -210,7 +212,7 @@ int main() {
 
     /* endless loop to get new connections */
     i=0;
-    while (1) {
+    while (true) {
         /* get order via socket */
         addr_len = sizeof(struct sockaddr_un);
         /* getting new connections from the client socket */
