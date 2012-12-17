@@ -21,6 +21,9 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 
+/* the main list for the orders in global scope */
+order_t order_list[LIMIT];
+
 /* A function to display an error message and then exit */
 void fatal(char *message) {
     fprintf(stderr, "\a!! - Fatal error - ");
@@ -89,18 +92,12 @@ void* order_handling(void* incoming) {
         local++;
     order_list[local] = incoming;
 
-    /* pizza sum */
-    short counter = 0;
-    counter = order_list[local].m_num + order_list[local].p_num + order_list[local].s_num;
-    if (counter == 0)
-        fatal("No pizza");
-
     /* new thread id for the sub-threads (max = pizza counter) */
     pthread_t sub_id[counter];
     char pizza_type = 'n';
 
     /* distribute pizzas in sub-threads */
-    int j=0;
+    short j=0;
     while (order_list[local].m_num != 0) {
         (order_list[local].m_num)--;
         /* Margarita type */
@@ -129,8 +126,11 @@ void* order_handling(void* incoming) {
     /* set "cooking" status */
     order_list[local].status2 = true;
 
-    /* TODO: join threads */
-
+    for (j; j>0; j--) {
+        if (pthread_join(sub_id[j], NULL) != 0)
+            fatal("Threads failed to join");
+    }
+    
     /* set "cooked" status */
     order_list[local].status1 = true;
     order_list[local].status2 = false;
@@ -200,8 +200,6 @@ void* coca_cola(void* unused) {
 int main() {
     /* thread type declarations */
     pthread_t id[LIMIT];
-    /* the main list for the orders */
-    order_t order_list[LIMIT];
     /* temporary place for incoming data */
     order_t incoming;
     /* thread id counter */
@@ -261,11 +259,58 @@ int main() {
         pthread_create(&id[i], NULL, &order_handling, &incoming);
 
         /* required action to counter (increment or zero) */
+        /* ( the LIMIth+1 order must not take the place of 1st order if 1st order is not finished ) */
         if (i < LIMIT)
             i++;
         else 
             i=0;
+        
     }
 
+
 cocacola:
+    /* code for giving away coca-colas in case of delay */
+
+    /* configure shared memory for this process */
+    shm_id2 = shmget(SHM_KEY, size , 0600);
+    if (shm_id2 == -1)          
+        fatal("in shared memory (coca cola handling)");
+    char* shm_begin2 = shmat(shm_id2, NULL, 0);
+    if (shm_begin2 == (char *)-1)
+        fatal("coca-cola could not attach to shared memory");
+
+    /* Configuring the pointers to shared memory */
+    order_t* order_list2 = (order_t*)shm_begin2;
+    /* set variable in order to test elapsed time of order */
+    struct timeval test;
+
+    /* scan the order lists */
+    for(;;) {
+        order_list2 = (order_t*)shm_begin2;
+        /* get current test time */	
+        gettimeofday(&test, NULL);
+        /* long int test_time = test.tv_sec*1000000 + test.tv_usec; */
+
+        int j = 0;
+        while (order_list2->exists == true) {
+            j++;
+            /* substract orders start time from current test time to get the elapsed time */
+            if ( (test.tv_sec - order_list2->start_sec)* 1000000 +
+                    (test.tv_usec - order_list2->start_usec) >= 3000) {
+                /* open file to write into */
+                FILE *coke;
+                coke = fopen("logfile", "a");
+
+                fprintf(coke, "[%d] ### coca cola for this order. Elapsed time: (%ld seconds and %ld microseconds)\n",
+                        order_list2->mypid , (test.tv_sec - order_list2->start_sec), (test.tv_usec - order_list2->start_usec));
+                fclose(coke);
+            }
+            order_list2++;
+        }
+        /* wait the proper time */
+        usleep(T_VERYLONG);
+    }
+    /* detaching from shared memory */
+    if (shmdt(shm_begin2) == -1)
+        fatal("could not detach from shared memory");
 }
