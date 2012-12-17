@@ -64,18 +64,6 @@ void delivering(bool d) {
         fatal("Wrong input on delivery function");
 }
 
-/* The waiting function for the cooking */
-void cooking(char t) {
-    if (t == 'm')
-        usleep(TIME_MARGARITA);
-    else if (t == 'p')
-        usleep(TIME_PEPPERONI);
-    else if (t == 's')
-        usleep(TIME_SPECIAL);
-    else
-        fatal("Wrong input on cook function");
-}
-
 /* Thread function for complete individual order handling */
 void* order_handling(void* incoming) {
     /* variables for elapsed time counting */
@@ -158,12 +146,23 @@ void* order_handling(void* incoming) {
 void* cook(void* pizza_type) {
     log("ready to get cooked");
 
-    /* TODO: cooking with cooking function */
+    /* condition variable or semaphores */
+    if (*pizza_type == 'm')
+        /* also change usleep() */
+        usleep(TIME_MARGARITA);
+    else if (*pizza_type == 'p')
+        usleep(TIME_PEPPERONI);
+    else if (*pizza_type == 's')
+        usleep(TIME_SPECIAL);
+    else
+        fatal("Wrong input on cook function");
+
+    log("cooked");
 
     pthread_exit(0);
 }
 
-/* Coca-Cola handling function (to a single independent thread */
+/* Coca-Cola handling function (to a single independent thread) */
 void* coca_cola(void* unused) {
     /* set variable in order to test elapsed time of order */
     struct timeval test;
