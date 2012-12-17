@@ -48,12 +48,6 @@ void log(char *message) {
     fclose(fd);
 }
 
-/* The handler to terminater the server */
-void term_hand(int sig_num) {
-    /* TODO: cancel (and join) all the threads */
-    exit(EXIT_SUCCESS);
-}
-
 /* The waiting function for the delivery */
 void delivering(bool d) {
     if (d == false)
@@ -213,8 +207,6 @@ int main() {
     socklen_t addr_len;
 
     /* ================ END OF DECLARATIONS ===================*/
-    /* signal handlers */
-    signal(SIGINT, term_hand);
 
     /* Fork off the parent process to get into deamon mode (background) */
     pid = fork();
