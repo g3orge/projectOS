@@ -21,6 +21,9 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 
+/* the main list for the orders in global scope */
+order_t order_list[LIMIT];
+
 /* A function to display an error message and then exit */
 void fatal(char *message) {
     fprintf(stderr, "\a!! - Fatal error - ");
@@ -89,18 +92,12 @@ void* order_handling(void* incoming) {
         local++;
     order_list[local] = incoming;
 
-    /* pizza sum */
-    short counter = 0;
-    counter = order_list[local].m_num + order_list[local].p_num + order_list[local].s_num;
-    if (counter == 0)
-        fatal("No pizza");
-
     /* new thread id for the sub-threads (max = pizza counter) */
     pthread_t sub_id[counter];
     char pizza_type = 'n';
 
     /* distribute pizzas in sub-threads */
-    int j=0;
+    short j=0;
     while (order_list[local].m_num != 0) {
         (order_list[local].m_num)--;
         /* Margarita type */
@@ -129,8 +126,11 @@ void* order_handling(void* incoming) {
     /* set "cooking" status */
     order_list[local].status2 = true;
 
-    /* TODO: join threads */
-
+    for (j; j>0; j--) {
+        if (pthread_join(sub_id[j], NULL) != 0)
+            fatal("Threads failed to join");
+    }
+    
     /* set "cooked" status */
     order_list[local].status1 = true;
     order_list[local].status2 = false;
@@ -166,8 +166,6 @@ void* cook(void* pizza_type) {
 int main() {
     /* thread type declarations */
     pthread_t id[LIMIT];
-    /* the main list for the orders */
-    order_t order_list[LIMIT];
     /* temporary place for incoming data */
     order_t incoming;
     /* thread id counter */
@@ -227,14 +225,17 @@ int main() {
         pthread_create(&id[i], NULL, &order_handling, &incoming);
 
         /* required action to counter (increment or zero) */
+        /* ( the LIMIth+1 order must not take the place of 1st order if 1st order is not finished ) */
         if (i < LIMIT)
             i++;
         else 
             i=0;
+        
     }
 
+
 cocacola:
-    /* code for giving away coca-colas in case of dalay */
+    /* code for giving away coca-colas in case of delay */
 
     /* configure shared memory for this process */
     shm_id2 = shmget(SHM_KEY, size , 0600);
