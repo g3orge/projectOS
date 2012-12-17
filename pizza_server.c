@@ -174,7 +174,7 @@ void* coca_cola(void* unused) {
         gettimeofday(&test, NULL);
 
         int j = 0;
-        while (order_list[/* TODO something */].exists == true) {
+        while (order_list[j].exists == true) {
             j++;
             /* substract order start time from current time to get elapsed time */
             if ( (test.tv_sec - order_list2->start_sec)* 1000000 +
@@ -200,6 +200,8 @@ void* coca_cola(void* unused) {
 int main() {
     /* thread type declarations */
     pthread_t id[LIMIT];
+    /* thread for coca-cola handling */
+    pthread_t colas;
     /* temporary place for incoming data */
     order_t incoming;
     /* thread id counter */
@@ -240,8 +242,9 @@ int main() {
     if (listen(sd, QUEUE) == -1)
         fatal("while listening");
 
-    /* TODO: coca-cola */
-
+    if (pthread_create(&colas, NULL, &coca_cola, NULL) != 0 )
+        fatal(" Failed to create coca-colas handling thread ");
+    
     /* endless loop to get new connections */
     i=0;
     while (true) {
