@@ -16,11 +16,10 @@
 #include "pizza.h"
 #include <pthread.h>
 #include <time.h>
-#include <signal.h>
 #include <semaphore.h>
 #include <sys/stat.h>
-#include <sys/ipc.h>
 
+/* ===== Globals ===== seen by all the threads all the time */
 /* the main list for the orders in global scope */
 order_t order_list[LIMIT];
 
@@ -76,6 +75,7 @@ void* order_handling(void* incoming) {
 
     /* new thread id for the sub-threads (max = pizza counter) */
     pthread_t sub_id[counter];
+	/* for pizza identification on the cook() function */
     char pizza_type = 'n';
 
     /* distribute pizzas in sub-threads */
@@ -84,7 +84,8 @@ void* order_handling(void* incoming) {
         (order_list[local].m_num)--;
         /* Margarita type */
         pizza_type = 'm';
-        pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
+        if (pthread_create(&sub_id[j], NULL, &cook, &pizza_type) != 0)
+			fatal("Failed to create 'cooking' thread");
         /* increment the special counter */
         j++;
     }	
@@ -92,15 +93,17 @@ void* order_handling(void* incoming) {
         (order_list[local].p_num)--;
         /* Pepperoni */
         pizza_type = 'p';
-        pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
-        /* increment the special counter */
+		if (pthread_create(&sub_id[j], NULL, &cook, &pizza_type) != 0)
+			fatal("Failed to create 'cooking' thread");
+		/* increment the special counter */
         j++;
     }
     while (order_list[local].s_num != 0) {
         (order_list[local].s_num)--;
         /* Special */
         pizza_type = 's';
-        pthread_create(&sub_id[j], NULL, &cook, &pizza_type);
+		if (pthread_create(&sub_id[j], NULL, &cook, &pizza_type) != 0)
+			fatal("Failed to create 'cooking' thread");
         /* increment the special counter */
         j++;
     }
@@ -108,9 +111,10 @@ void* order_handling(void* incoming) {
     /* set "cooking" status */
     order_list[local].status2 = true;
 
+	/* wait for pizzas to get ready */
     for (j; j>0; j--) {
         if (pthread_join(sub_id[j], NULL) != 0)
-            fatal("Threads failed to join");
+            fatal("Thread failed to join");
     }
     
     /* set "cooked" status */
@@ -119,7 +123,8 @@ void* order_handling(void* incoming) {
 
     log("ready for delivery");
 
-    /* TODO: Delivery */
+	/* delivering TODO:semaphores/cond-variables around this */
+	delivering(order_list[local].time);
 
     /* Print time */
     gettimeofday(&end,NULL);
@@ -161,6 +166,10 @@ void* coca_cola(void* unused) {
     /* set variable in order to test elapsed time of order */
     struct timeval test;
 
+	/* we are gonna need to work without alarm() since it's signal-based
+	 * and signals are per-process (we don't want to stop the whole
+	 * program when the coca_cola handler kicks in) */
+
     /* scan the order lists */
     while(true) {
         /* get current test time */	
@@ -169,14 +178,14 @@ void* coca_cola(void* unused) {
         int j = 0;
         while (order_list[j].exists == true) {
             j++;
-            /* substract order start time from current time to get elapsed time */
+            /* substract order time from current time to get elapsed time */
             if ( (test.tv_sec - order_list2->start_sec)* 1000000 +
                     (test.tv_usec - order_list2->start_usec) >= 3000) {
                 /* open file to write into */
                 FILE *coke;
                 coke = fopen("logfile", 'a');
 
-                fprintf(coke, "[%d] ### coca cola for this order. Elapsed time:\
+                fprintf(coke,"[%d] ### coca cola for this order. Elapsed time:\
                         (%ld seconds and %ld microseconds)\n",
                         order_list2->mypid,
                         (test.tv_sec - order_list2->start_sec),
@@ -206,7 +215,7 @@ int main() {
     struct sockaddr_un server_addr, client_addr;
     socklen_t addr_len;
 
-    /* ================ END OF DECLARATIONS ===================*/
+    /* ============= END OF DECLARATIONS ================ */
 
     /* Fork off the parent process to get into deamon mode (background) */
     pid = fork();
@@ -234,7 +243,7 @@ int main() {
         fatal("while listening");
 
     if (pthread_create(&colas, NULL, &coca_cola, NULL) != 0 )
-        fatal(" Failed to create coca-colas handling thread ");
+        fatal("Failed to create coca-colas handling thread");
     
     /* endless loop to get new connections */
     i=0;
@@ -250,14 +259,15 @@ int main() {
         close(new_conn);
 
         /* Threading */
-        pthread_create(&id[i], NULL, &order_handling, &incoming);
+        if (pthread_create(&id[i], NULL, &order_handling, &incoming) != 0)
+			fatal("Failed to create basic order handling thread");
 
         /* required action to counter (increment or zero) */
-        /* ( the LIMIth+1 order must not take the place of 1st order if 1st order is not finished ) */
         if (i < LIMIT)
             i++;
         else 
+			/* (the LIMIth+1 order must not take the place of 1st order
+			 * if 1st order is not finished) */
             i=0;
-        
     }
 }

@@ -1,24 +1,23 @@
-/* Header file */
+/* Pizza server 2012 Operating Systems Project
+ * Header file */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h> 
 #include <unistd.h>
 #include <fcntl.h>
-/* Pizza default values (time in microseconds) */ 
-#define TIME_MARGARITA 10000
-#define TIME_PEPPERONI 12000
-#define TIME_SPECIAL 15000
-#define T_KONTA 5000
-#define T_MAKRIA 10000
-#define T_VERYLONG 50000
+/* Pizza default values (time in seconds) */ 
+#define TIME_MARGARITA 1
+#define TIME_PEPPERONI 2
+#define TIME_SPECIAL 3
+#define T_KONTA 3
+#define T_MAKRIA 5
+#define T_VERYLONG 20
 #define N_DIANOMEIS 10
 #define N_PSISTES 10
+/* pizza-in-every-order limit */
 #define N_MAXPIZZA 3
-/* change this if server can't connect to shared memory */
-#define SHM_KEY 8843
 /* random names for semaphores */
 #define SEM_NAME1 "ppizzaguys"
 #define SEM_NAME2 "ppveinafhu"
@@ -45,4 +44,6 @@ typedef struct {
     /* time variables */
     int start_sec;
     int start_usec;
+	/* we may need a order id */
+	/* int id; */
 } order_t;

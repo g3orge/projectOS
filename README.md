@@ -1,19 +1,20 @@
 Λειτουργικά Συστήματα Ι - 2012    
-Άσκηση 1
+Άσκηση 2
 
 ----------
 Γεώργιος Παπανικολάου - Α.Μ.: 5044    
 Προκόπης Γρύλλος - Α.Μ.: 4975
 
 ----------
-Build for GNU/Linux (x86_64-pc-linux-gnu) with:
-  * gcc 4.6.3
+Build for GNU/Linux (x86_64-pc-linux-gnu) with:  
+	* gcc 4.6.3
 	* make 3.81
 	* bash 4.2.24
 	* git 1.7.9.5
 	* vim 7.3.429
 
-Project hosted on http://github.com/g3orge/projectOS    
+Project hosted on http://github.com/Nacho-Libre/projectOS/tree/threads    
+(threads branch)
 There is ABSOLUTELY NO WARRANTY
 
 ----------

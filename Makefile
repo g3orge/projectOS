@@ -26,7 +26,5 @@ test:
 	./run_tests.sh
 
 kill:
-	-@echo "Number of server processes: (correct: 2)"
-	-@pgrep -u `whoami` server | wc -l
-	-@echo "Killing them..."
+	-@echo "Killing server instance"
 	-@pgrep -u `whoami` server | xargs kill
