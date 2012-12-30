@@ -63,7 +63,7 @@ void log(char *message)
 }
 
 /* The waiting function (returns nothing)
- * using "faked" condition variable and mutex around the 
+ * using "faked" condition variable and mutex around the
  * timedwait POSIX function to accomplish thread-based waiting */
 void wait_function(short requested_time)
 {
@@ -162,10 +162,10 @@ void* order_handling(void* incoming)
 		pthread_cond_wait(&delivery_cond, &delivery_mutex);
 		/* take the guy */
 		delivery_guys--;
-	} else {
+	} else
 		/* take the guy */
 		delivery_guys--;
-	}
+
 	/* actually delivering */
 	if (order_list[local].time == false)
         wait_function(T_KONTA);
@@ -205,9 +205,8 @@ void* cook(void* pizza_type)
 		pthread_cond_wait(&cook_cond, &cook_mutex);
 		/* take the cooker */
 		cookers--;
-	} else {
+	} else
 		cookers--;
-	}
 
 	/* we have the cooker. Actually cook (wait) */
     if (*pizza_type == 'm')
@@ -244,7 +243,7 @@ void* coca_cola(void* unused)
         /* get current test time */	
         gettimeofday(&test, NULL);
 
-        int j = 0;
+        short j = 0;
 		/* while ??? */
         while (order_list[j].exists == true) {
             j++;
@@ -264,8 +263,7 @@ void* coca_cola(void* unused)
             }
             order_list2++;
         }
-        /* TODO: Change this */
-        usleep(T_VERYLONG);
+        wait_function(T_VERYLONG);
     }
 }
 
