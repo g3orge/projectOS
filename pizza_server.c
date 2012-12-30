@@ -26,16 +26,19 @@ order_t order_list[LIMIT];
 pthead_mutex_t list_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthead_mutex_t cook_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthead_mutex_t delivery_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthead_mutex_t fake_mutex     = PTHREAD_MUTEX_INITIALIZER;
 /* condition variables (and static initialization) */
 pthread_cond_t cook_cond     = PTHREAD_COND_INITIALIZER;
 pthread_cond_t delivery_cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t fake_cond     = PTHREAD_COND_INITIALIZER;
 /* global counters */
 short cookers = N_PSISTES;
 short delivery_guys = N_DIANOMEIS;
 
 /* ========== Functions ========== */
 /* A function to display an error message and then exit */
-void fatal(char *message) {
+void fatal(char *message)
+{
     fprintf(stderr, "\a!! - Fatal error - ");
     fprintf(stderr, "%s\n", message);
     /* also writing to a logfile */
@@ -49,7 +52,8 @@ void fatal(char *message) {
 }
 
 /* The function to log messages from everywhere */
-void log(char *message) {
+void log(char *message)
+{
     FILE *fd;
     time_t raw_time;
     time(&raw_time);
@@ -58,18 +62,32 @@ void log(char *message) {
     fclose(fd);
 }
 
-/* The waiting function for the delivery */
-void delivering(bool d) {
-    if (d == false)
-        usleep(T_KONTA);
-    else if (d == true)
-        usleep(T_MAKRIA);
-    else
-        fatal("Wrong input on delivery function");
+/* The waiting function (returns nothing)
+ * using "faked" condition variable and mutex around the 
+ * timedwait POSIX function to accomplish thread-based waiting */
+void wait_function(short requested_time)
+{
+	struct timespec ts;
+	struct timeval now;
+
+	/* get current time*/
+	gettimeofday(&now,NULL);
+
+	/* current time */
+    ts.tv_sec  = now.tv_sec;
+    ts.tv_nsec = now.tv_usec * 1000;
+	/* the actual given time */
+    ts.tv_sec += requested_time;
+
+	/* faked timed wait requires locked mutex*/
+	pthread_mutex_lock(&fake_mutex);
+	pthread_cond_timedwait(&fake_cond, &fake_mutex, &ts);
+	pthread_mutex_unlock(&fake_mutex);
 }
 
 /* Thread function for complete individual order handling */
-void* order_handling(void* incoming) {
+void* order_handling(void* incoming)
+{
     /* variables for elapsed time counting */
     struct timeval begin, end;
     gettimeofday(&begin, NULL);
@@ -138,6 +156,7 @@ void* order_handling(void* incoming) {
     log("ready for delivery");
 
 	/* get the delivery guy */
+	pthread_mutex_lock(&delivery_mutex);
 	if (delivery_guys == 0) {
 		/* if noone is available, wait */
 		pthread_cond_wait(&delivery_cond, &delivery_mutex);
@@ -148,8 +167,13 @@ void* order_handling(void* incoming) {
 		delivery_guys--;
 	}
 	/* actually delivering */
-	delivering(order_list[local].time);
-	
+	if (order_list[local].time == false)
+        wait_function(T_KONTA);
+    else if (order_list[local].time == true)
+        wait_function(T_MAKRIA);
+    else
+        fatal("Wrong input on delivery function");
+
 	/* and give him back */
 	delivery_guys++;
 	pthread_cond_signal(&delivery_cond, &delivery_mutex);
@@ -171,10 +195,12 @@ void* order_handling(void* incoming) {
 }
 
 /* Thread function for cooking individual pizzas */
-void* cook(void* pizza_type) {
+void* cook(void* pizza_type)
+{
     log("ready to get cooked");
 
 	/* using condition variable to get the cooker */
+	pthread_mutex_lock(&cook_mutex);
 	if (cookers == 0) {
 		pthread_cond_wait(&cook_cond, &cook_mutex);
 		/* take the cooker */
@@ -185,12 +211,11 @@ void* cook(void* pizza_type) {
 
 	/* we have the cooker. Actually cook (wait) */
     if (*pizza_type == 'm')
-        usleep(TIME_MARGARITA);
-		/* TODO: pthread_cond_timewait() */
+        wait_function(TIME_MARGARITA);
     else if (*pizza_type == 'p')
-        usleep(TIME_PEPPERONI);
+        wait_function(TIME_PEPPERONI);
     else if (*pizza_type == 's')
-        usleep(TIME_SPECIAL);
+        wait_function(TIME_SPECIAL);
     else
         fatal("Wrong input on cook function");
 
@@ -205,7 +230,8 @@ void* cook(void* pizza_type) {
 }
 
 /* Coca-Cola handling function (to a single independent thread) */
-void* coca_cola(void* unused) {
+void* coca_cola(void* unused)
+{
     /* set variable in order to test elapsed time of order */
     struct timeval test;
 
@@ -243,7 +269,9 @@ void* coca_cola(void* unused) {
     }
 }
 
-int main() {
+/* ========== Main ========== */
+int main()
+{
     /* thread type declarations */
     pthread_t id[LIMIT];
     /* thread for coca-cola handling */
