@@ -32,8 +32,8 @@ pthread_cond_t cook_cond     = PTHREAD_COND_INITIALIZER;
 pthread_cond_t delivery_cond = PTHREAD_COND_INITIALIZER;
 pthread_cond_t fake_cond     = PTHREAD_COND_INITIALIZER;
 /* global counters */
-short cookers = N_PSISTES;
-short delivery_guys = N_DIANOMEIS;
+const short cookers = N_PSISTES;
+const short delivery_guys = N_DIANOMEIS;
 
 /* ========== Functions ========== */
 /* A function to display an error message and then exit */
@@ -229,40 +229,46 @@ void* cook(void* pizza_type)
 }
 
 /* Coca-Cola handling function (to a single independent thread) */
-void* coca_cola(void* unused)
+void* coca_cola(void* arg)
 {
+	/* we are gonna need to work without alarm() since it's signal-based
+	 * and signals are per-process and we don't want to stop the whole
+	 * program when the coca_cola handler kicks in. */
+
     /* set variable in order to test elapsed time of order */
     struct timeval test;
+	/* arbitary variable */
+	short k;
 
-	/* we are gonna need to work without alarm() since it's signal-based
-	 * and signals are per-process (we don't want to stop the whole
-	 * program when the coca_cola handler kicks in) */
-
-    /* scan the order lists */
+    /* endless loop to check for delays */
     while(true) {
         /* get current test time */	
         gettimeofday(&test, NULL);
 
-        short j = 0;
-		/* while ??? */
-        while (order_list[j].exists == true) {
-            j++;
-            /* substract order time from current time to get elapsed time */
-            if ( (test.tv_sec - order_list2->start_sec)* 1000000 +
-                    (test.tv_usec - order_list2->start_usec) >= 3000) {
-                /* open file to write into */
-                FILE *coke;
-                coke = fopen("logfile", 'a');
-
-                fprintf(coke,"### coca cola for [%d] order. Elapsed time:\
-                        (%ld seconds and %ld microseconds)\n",
-                        order_list2->mypid,
-                        (test.tv_sec - order_list2->start_sec),
-                        (test.tv_usec - order_list2->start_usec));
-                fclose(coke);
-            }
-            order_list2++;
+		/* parse all the available space */
+		for (k = 0; k <= LIMIT; k++) {
+			/* the order has to exists */
+			if (order_list[k].exists == true) {
+				int temp_sec = order_list[k].start_sec;
+				int temp_usec = order_list[k].start_usec;
+				/* substracting the internal order time (temp variables) from
+				 * the current time to find the elapsed time per order */
+				if ((test.tv_sec - temp_sec) * 1000000 +
+					(test.tv_usec - temp_usec) >= T_VERYLONG) {
+					/* delayed order found. Log it */
+					/* TODO: Report delay to client? */
+					FILE *coke;
+					coke = fopen("coke", 'a');
+					fprintf(coke,"### coca cola for [%d] order. Elapsed time:\
+							(%ld seconds and %ld microseconds)\n",
+							order_list[k].myid,
+							(test.tv_sec - temp_sec),
+							(test.tv_usec - temp_usec));
+					fclose(coke);
+				}
+			} /* first 'if' closes here */
         }
+		/* wait between the checks */
         wait_function(T_VERYLONG);
     }
 }
@@ -276,7 +282,7 @@ int main()
     pthread_t colas;
     /* temporary place for incoming data */
     order_t incoming;
-    /* thread id counter */
+    /* thread id counter (long?) */
     int i;
     /* socket file descriptors */
     int sd, new_conn;
@@ -332,7 +338,7 @@ int main()
         if (pthread_create(&id[i], NULL, &order_handling, &incoming) != 0)
 			fatal("Failed to create basic order handling thread");
 
-        /* required action to counter (increment or zero) */
+        /* required action for counter (increment or zero) */
         if (i < LIMIT)
             i++;
         else 

@@ -18,10 +18,6 @@
 #define N_PSISTES 10
 /* pizza-in-every-order limit */
 #define N_MAXPIZZA 3
-/* random names for semaphores */
-#define SEM_NAME1 "ppizzaguys"
-#define SEM_NAME2 "ppveinafhu"
-#define SEM_NAME3 "haeriglurf"
 /* pizza limit, listen queue */
 #define LIMIT 200
 #define QUEUE 5
@@ -44,6 +40,7 @@ typedef struct {
     /* time variables */
     int start_sec;
     int start_usec;
-	/* we may need a order id */
-	/* int id; */
+	/* we need an order id */
+	/* maybe long if we add some clever handling (see end of main file) */
+	int myid;
 } order_t;
