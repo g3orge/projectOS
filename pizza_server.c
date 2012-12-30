@@ -19,10 +19,21 @@
 #include <semaphore.h>
 #include <sys/stat.h>
 
-/* ===== Globals ===== seen by all the threads all the time */
+/* ========== Globals ========== */
 /* the main list for the orders in global scope */
 order_t order_list[LIMIT];
+/* mutexes (and static initialization) */
+pthead_mutex_t list_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthead_mutex_t cook_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthead_mutex_t delivery_mutex = PTHREAD_MUTEX_INITIALIZER;
+/* condition variables (and static initialization) */
+pthread_cond_t cook_cond     = PTHREAD_COND_INITIALIZER;
+pthread_cond_t delivery_cond = PTHREAD_COND_INITIALIZER;
+/* global counters */
+short cookers = N_PSISTES;
+short delivery_guys = N_DIANOMEIS;
 
+/* ========== Functions ========== */
 /* A function to display an error message and then exit */
 void fatal(char *message) {
     fprintf(stderr, "\a!! - Fatal error - ");
@@ -37,7 +48,7 @@ void fatal(char *message) {
     exit(EXIT_FAILURE);
 }
 
-/* The function to log messages from children */
+/* The function to log messages from everywhere */
 void log(char *message) {
     FILE *fd;
     time_t raw_time;
@@ -68,10 +79,13 @@ void* order_handling(void* incoming) {
 
     /* Try to find a place in the order_list array */
     short local = 0;
-    /* TODO: we need semaphores here */
+	/* synchronization with mutex */
+	pthread_mutex_lock(&list_mutex);
     while (order_list[local].exists == true)
         local++;
     order_list[local] = incoming;
+	/* done */
+	pthread_mutex_unlock(&list_mutex);
 
     /* new thread id for the sub-threads (max = pizza counter) */
     pthread_t sub_id[counter];
@@ -123,13 +137,28 @@ void* order_handling(void* incoming) {
 
     log("ready for delivery");
 
-	/* delivering TODO:semaphores/cond-variables around this */
+	/* get the delivery guy */
+	if (delivery_guys == 0) {
+		/* if noone is available, wait */
+		pthread_cond_wait(&delivery_cond, &delivery_mutex);
+		/* take the guy */
+		delivery_guys--;
+	} else {
+		/* take the guy */
+		delivery_guys--;
+	}
+	/* actually delivering */
 	delivering(order_list[local].time);
+	
+	/* and give him back */
+	delivery_guys++;
+	pthread_cond_signal(&delivery_cond, &delivery_mutex);
+	/* ...done */
 
-    /* Print time */
+    /* log time */
     gettimeofday(&end,NULL);
     FILE *fd;
-    fd = fopen("logfile", "a");
+    fd = fopen("logfile", 'a');
     fprintf(fd, "[%d] -^- elapsed time: %ld seconds and %ld microseconds \n",
           getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
     fclose(fd);
@@ -145,10 +174,19 @@ void* order_handling(void* incoming) {
 void* cook(void* pizza_type) {
     log("ready to get cooked");
 
-    /* condition variable or semaphores */
+	/* using condition variable to get the cooker */
+	if (cookers == 0) {
+		pthread_cond_wait(&cook_cond, &cook_mutex);
+		/* take the cooker */
+		cookers--;
+	} else {
+		cookers--;
+	}
+
+	/* we have the cooker. Actually cook (wait) */
     if (*pizza_type == 'm')
-        /* also change usleep() */
         usleep(TIME_MARGARITA);
+		/* TODO: pthread_cond_timewait() */
     else if (*pizza_type == 'p')
         usleep(TIME_PEPPERONI);
     else if (*pizza_type == 's')
@@ -158,6 +196,11 @@ void* cook(void* pizza_type) {
 
     log("cooked");
 
+	/* give the cooker back */
+	cookers++;
+	pthread_cond_signal(&cook_cond, &cook_mutex);
+
+	/* bail out to join with parent thread */
     pthread_exit(0);
 }
 
@@ -176,6 +219,7 @@ void* coca_cola(void* unused) {
         gettimeofday(&test, NULL);
 
         int j = 0;
+		/* while ??? */
         while (order_list[j].exists == true) {
             j++;
             /* substract order time from current time to get elapsed time */
@@ -185,7 +229,7 @@ void* coca_cola(void* unused) {
                 FILE *coke;
                 coke = fopen("logfile", 'a');
 
-                fprintf(coke,"[%d] ### coca cola for this order. Elapsed time:\
+                fprintf(coke,"### coca cola for [%d] order. Elapsed time:\
                         (%ld seconds and %ld microseconds)\n",
                         order_list2->mypid,
                         (test.tv_sec - order_list2->start_sec),
@@ -253,7 +297,7 @@ int main() {
         /* getting new connections from the client socket */
         new_conn = accept(sd, (struct sockaddr *) &client_addr, &addr_len);
         read(new_conn, &incoming, sizeof(incoming));
-        /* required variable for shared memory allocation */
+        /* required variable for memory organization */
         incoming.exists = true;
         /* close connection with this client */
         close(new_conn);
