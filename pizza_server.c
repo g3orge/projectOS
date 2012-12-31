@@ -16,7 +16,6 @@
 #include "pizza.h"
 #include <pthread.h>
 #include <time.h>
-#include <sys/stat.h>
 
 /* ========== Globals ========== */
 /* the main list for the orders in global scope */

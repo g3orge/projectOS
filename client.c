@@ -1,4 +1,5 @@
-/* Client program
+/* 
+ * Client program
  * George Papanikolaou - Prokopis Gryllos
  * Operating Systems Project 2012 - Pizza Delivery
  * There is absolutely no warranty
@@ -25,8 +26,7 @@ int kbhit(void)
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-    if(ch != EOF)
-    {
+    if(ch != EOF) {
         ungetc(ch, stdin);
         return 1;
     }
@@ -35,7 +35,8 @@ int kbhit(void)
 }
 
 /* function to clear the input buffer */
-int clear_input_buffer(void) {
+int clear_input_buffer(void)
+{
     int ch;
     if (kbhit())
         while (((ch = getchar()) != EOF) && (ch != '\n')) /* void */;
@@ -43,7 +44,8 @@ int clear_input_buffer(void) {
 }
 
 /* function that print	s the correct order format */
-void order_format() {
+void order_format()
+{
     printf("\nOrder format :$ client <arg1> <arg2> <arg3> <arg4> ");
     printf("\n<arg1> : the number of daisy pizzas you want to order ");
     printf("\n<arg2> : the number of peperoni pizzas you want to order ");
@@ -55,7 +57,8 @@ void order_format() {
 }
 
 /* function that prints order details */
-void print_order(order_t  order) {
+void print_order(order_t  order)
+{
     printf("\n Your order \n %i daisy pizzas", order.m_num);
     printf("\n %i peperoni pizzas", order.p_num); 
     printf("\n %i special pizzas", order.s_num); 
@@ -66,7 +69,8 @@ void print_order(order_t  order) {
 }
 
 /* a function to return bool type */
-bool torf(int i) {
+bool torf(int i)
+{
     bool time;
     if (i == 0)
         time = false;
@@ -76,7 +80,8 @@ bool torf(int i) {
 }
 
 /* A function to display an error message and then exit */
-void fatal(int mode,char *message) {
+void fatal(int mode,char *message)
+{
     if (mode == 0) {
         fprintf(stderr, "\a!! - Fatal error - ");
         fprintf(stderr, "%s\n", message);
@@ -92,7 +97,8 @@ void fatal(int mode,char *message) {
 }
 
 /* This is a system function to generate random numbers where needed */
-int RandomInteger(int low, int high) {  
+int RandomInteger(int low, int high)
+{  
     int k;
     int dif=high-low+1; 
     k = low + rand() % dif; 
@@ -101,7 +107,8 @@ int RandomInteger(int low, int high) {
 
 
 /* function for interactively create a new order */
-order_t make_order(void) {
+order_t make_order(void)
+{
     int i ;
     char choise;
     order_t order; 
@@ -127,7 +134,8 @@ order_t make_order(void) {
 }
 
 /* this function creates a random order */
-order_t random_order(void) {
+order_t random_order(void)
+{
     order_t order;
     order.m_num = RandomInteger(0,1);
     order.p_num = RandomInteger(0,1);
@@ -137,8 +145,8 @@ order_t random_order(void) {
     return order;
 }
 
-int main(int argc, char **argv) {
-
+int main(int argc, const char **argv)
+{
     srand((int)time(0)); 
     /* create order_t object */
     order_t order;
