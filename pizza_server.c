@@ -51,7 +51,7 @@ void fatal(char *message)
 }
 
 /* The function to log messages from everywhere */
-void log(char *message)
+void pizza_log(char *message)
 {
     FILE *fd;
     time_t raw_time;
@@ -87,7 +87,7 @@ void wait_function(short requested_time)
 /* Thread function for cooking individual pizzas */
 void* cook(void* pizza_type)
 {
-    log("ready to get cooked");
+    pizza_log("ready to get cooked");
 
 	/* required typecast */
 	char* type = (char*)(pizza_type);
@@ -111,7 +111,7 @@ void* cook(void* pizza_type)
     else
         fatal("Wrong input on cook function");
 
-    log("cooked");
+    pizza_log("cooked");
 
 	/* give the cooker back */
 	cookers++;
@@ -237,7 +237,7 @@ void* order_handling(void* incoming)
     order_list[local].status1 = true;
     order_list[local].status2 = false;
 
-    log("ready for delivery");
+    pizza_log("ready for delivery");
 
 	/* get the delivery guy */
 	pthread_mutex_lock(&delivery_mutex);
