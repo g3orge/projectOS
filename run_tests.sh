@@ -24,18 +24,17 @@ else
     n=100; 
 fi
 
+# -x is exists
 if [[ -x $2 ]]; then
-    for (( i=1; i<=n; i++ ))
-    do
+    for (( i=1; i<=n; i++ )) do
         ./$2 rand  # call the client as specified by second argument
         sleep 0.2  # just a little delay in order
         # to have the rand function generate
         # different orders
-        echo "Order $i sent ";
+        echo "Order $i sent";
     done
 else
     if [[ -x client ]]; then
-
         for (( i=1; i<=n; i++ ))
         do
             ./client rand  # call the client as default

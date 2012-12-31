@@ -10,7 +10,8 @@ WARN=-w
 FLAGS=-pthread
 
 all: server client
-	echo > logfile
+	-@echo "cleaning logfile..."
+	-@echo > logfile
 
 server: pizza_server.c pizza.h
 	$(COMP) $(WARN) pizza_server.c -o server $(FLAGS)

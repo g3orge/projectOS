@@ -7,11 +7,11 @@
 
 ----------
 Build for GNU/Linux (x86_64-pc-linux-gnu) with:  
-	* gcc 4.6.3    
-	* make 3.81    
-	* bash 4.2.24    
-	* git 1.7.9.5    
-	* vim 7.3.429    
+    * gcc 4.7.2  
+    * GNU make 3.82  
+    * GNU bash 4.2.39  
+    * git 1.8.0  
+    * vim 7.3.754 (patched for Arch Linux)  
 
 Project hosted on http://github.com/Nacho-Libre/projectOS/tree/threads    
 (threads branch)
