@@ -16,24 +16,23 @@
 #include "pizza.h"
 #include <pthread.h>
 #include <time.h>
-#include <semaphore.h>
 #include <sys/stat.h>
 
 /* ========== Globals ========== */
 /* the main list for the orders in global scope */
 order_t order_list[LIMIT];
 /* mutexes (and static initialization) */
-pthead_mutex_t list_mutex     = PTHREAD_MUTEX_INITIALIZER;
-pthead_mutex_t cook_mutex     = PTHREAD_MUTEX_INITIALIZER;
-pthead_mutex_t delivery_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthead_mutex_t fake_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t list_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cook_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t delivery_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t fake_mutex     = PTHREAD_MUTEX_INITIALIZER;
 /* condition variables (and static initialization) */
 pthread_cond_t cook_cond     = PTHREAD_COND_INITIALIZER;
 pthread_cond_t delivery_cond = PTHREAD_COND_INITIALIZER;
 pthread_cond_t fake_cond     = PTHREAD_COND_INITIALIZER;
 /* global counters */
-const short cookers = N_PSISTES;
-const short delivery_guys = N_DIANOMEIS;
+short cookers = N_PSISTES;
+short delivery_guys = N_DIANOMEIS;
 
 /* ========== Functions ========== */
 /* A function to display an error message and then exit */
@@ -85,15 +84,99 @@ void wait_function(short requested_time)
 	pthread_mutex_unlock(&fake_mutex);
 }
 
+/* Thread function for cooking individual pizzas */
+void* cook(void* pizza_type)
+{
+    log("ready to get cooked");
+
+	/* required typecast */
+	char* type = (char*)(pizza_type);
+
+	/* using condition variable to get the cooker */
+	pthread_mutex_lock(&cook_mutex);
+	if (cookers == 0) {
+		pthread_cond_wait(&cook_cond, &cook_mutex);
+		/* take the cooker */
+		cookers--;
+	} else
+		cookers--;
+
+	/* we have the cooker. Actually cook (wait) */
+    if (*type == 'm')
+        wait_function(TIME_MARGARITA);
+    else if (*type == 'p')
+        wait_function(TIME_PEPPERONI);
+    else if (*type == 's')
+        wait_function(TIME_SPECIAL);
+    else
+        fatal("Wrong input on cook function");
+
+    log("cooked");
+
+	/* give the cooker back */
+	cookers++;
+	pthread_cond_signal(&cook_cond);
+
+	/* bail out to join with parent thread */
+    pthread_exit(0);
+}
+
+/* Coca-Cola handling function (to a single independent thread) */
+void* coca_cola(void* arg)
+{
+	/* we are gonna need to work without alarm() since it's signal-based
+	 * and signals are per-process and we don't want to stop the whole
+	 * program when the coca_cola handler kicks in. */
+
+    /* set variable in order to test elapsed time of order */
+    struct timeval test;
+	/* arbitary variable */
+	short k;
+
+    /* endless loop to check for delays */
+    while(true) {
+        /* get current test time */
+        gettimeofday(&test, NULL);
+
+		/* parse all the available space */
+		for (k = 0; k <= LIMIT; k++) {
+			/* the order has to exists */
+			if (order_list[k].exists == true) {
+				int temp_sec = order_list[k].start_sec;
+				int temp_usec = order_list[k].start_usec;
+				/* substracting the internal order time (temp variables) from
+				 * the current time to find the elapsed time per order */
+				if ((test.tv_sec - temp_sec) * 1000000 +
+					(test.tv_usec - temp_usec) >= T_VERYLONG) {
+					/* delayed order found. Log it */
+					/* TODO: Report delay to client? */
+					FILE *coke;
+					coke = fopen("coke", "a");
+					fprintf(coke,"### coca cola for [%d] order. Elapsed time:\
+							(%ld seconds and %ld microseconds)\n",
+							order_list[k].myid,
+							(test.tv_sec - temp_sec),
+							(test.tv_usec - temp_usec));
+					fclose(coke);
+				}
+			} /* first 'if' closes here */
+        }
+		/* wait between the checks */
+        wait_function(T_VERYLONG);
+    }
+}
+
 /* Thread function for complete individual order handling */
 void* order_handling(void* incoming)
 {
     /* variables for elapsed time counting */
     struct timeval begin, end;
     gettimeofday(&begin, NULL);
+	/* required typecast */
+	order_t* incoming_order = (order_t*)(incoming);
     /* initialization for the coca cola process */
-    incoming.start_sec = begin.tv_sec; 
-    incoming.start_usec = begin.tv_usec;
+    incoming_order->start_sec = begin.tv_sec;
+    incoming_order->start_usec = begin.tv_usec;
 
     /* Try to find a place in the order_list array */
     short local = 0;
@@ -101,16 +184,17 @@ void* order_handling(void* incoming)
 	pthread_mutex_lock(&list_mutex);
     while (order_list[local].exists == true)
         local++;
-    order_list[local] = incoming;
+    order_list[local] = *incoming_order;
 	/* done */
 	pthread_mutex_unlock(&list_mutex);
 
-    /* new thread id for the sub-threads (max = pizza counter) */
-    pthread_t sub_id[counter];
+	/* sub-thread ids */
+    pthread_t sub_id[N_MAXPIZZA];
 	/* for pizza identification on the cook() function */
     char pizza_type = 'n';
 
     /* distribute pizzas in sub-threads */
+	/* sub-thread counter */
     short j=0;
     while (order_list[local].m_num != 0) {
         (order_list[local].m_num)--;
@@ -176,13 +260,13 @@ void* order_handling(void* incoming)
 
 	/* and give him back */
 	delivery_guys++;
-	pthread_cond_signal(&delivery_cond, &delivery_mutex);
+	pthread_cond_signal(&delivery_cond);
 	/* ...done */
 
     /* log time */
     gettimeofday(&end,NULL);
     FILE *fd;
-    fd = fopen("logfile", 'a');
+    fd = fopen("logfile", "a");
     fprintf(fd, "[%d] -^- elapsed time: %ld seconds and %ld microseconds \n",
           getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
     fclose(fd);
@@ -192,85 +276,6 @@ void* order_handling(void* incoming)
 
     /* exit successfully */
     pthread_exit(0);
-}
-
-/* Thread function for cooking individual pizzas */
-void* cook(void* pizza_type)
-{
-    log("ready to get cooked");
-
-	/* using condition variable to get the cooker */
-	pthread_mutex_lock(&cook_mutex);
-	if (cookers == 0) {
-		pthread_cond_wait(&cook_cond, &cook_mutex);
-		/* take the cooker */
-		cookers--;
-	} else
-		cookers--;
-
-	/* we have the cooker. Actually cook (wait) */
-    if (*pizza_type == 'm')
-        wait_function(TIME_MARGARITA);
-    else if (*pizza_type == 'p')
-        wait_function(TIME_PEPPERONI);
-    else if (*pizza_type == 's')
-        wait_function(TIME_SPECIAL);
-    else
-        fatal("Wrong input on cook function");
-
-    log("cooked");
-
-	/* give the cooker back */
-	cookers++;
-	pthread_cond_signal(&cook_cond, &cook_mutex);
-
-	/* bail out to join with parent thread */
-    pthread_exit(0);
-}
-
-/* Coca-Cola handling function (to a single independent thread) */
-void* coca_cola(void* arg)
-{
-	/* we are gonna need to work without alarm() since it's signal-based
-	 * and signals are per-process and we don't want to stop the whole
-	 * program when the coca_cola handler kicks in. */
-
-    /* set variable in order to test elapsed time of order */
-    struct timeval test;
-	/* arbitary variable */
-	short k;
-
-    /* endless loop to check for delays */
-    while(true) {
-        /* get current test time */	
-        gettimeofday(&test, NULL);
-
-		/* parse all the available space */
-		for (k = 0; k <= LIMIT; k++) {
-			/* the order has to exists */
-			if (order_list[k].exists == true) {
-				int temp_sec = order_list[k].start_sec;
-				int temp_usec = order_list[k].start_usec;
-				/* substracting the internal order time (temp variables) from
-				 * the current time to find the elapsed time per order */
-				if ((test.tv_sec - temp_sec) * 1000000 +
-					(test.tv_usec - temp_usec) >= T_VERYLONG) {
-					/* delayed order found. Log it */
-					/* TODO: Report delay to client? */
-					FILE *coke;
-					coke = fopen("coke", 'a');
-					fprintf(coke,"### coca cola for [%d] order. Elapsed time:\
-							(%ld seconds and %ld microseconds)\n",
-							order_list[k].myid,
-							(test.tv_sec - temp_sec),
-							(test.tv_usec - temp_usec));
-					fclose(coke);
-				}
-			} /* first 'if' closes here */
-        }
-		/* wait between the checks */
-        wait_function(T_VERYLONG);
-    }
 }
 
 /* ========== Main ========== */
@@ -294,7 +299,7 @@ int main()
     /* ============= END OF DECLARATIONS ================ */
 
     /* Fork off the parent process to get into deamon mode (background) */
-    pid = fork();
+    int pid = fork();
     if (pid == -1)
         fatal("Can't fork parent");
     if (pid > 0) {
@@ -343,7 +348,7 @@ int main()
             i++;
         else 
 			/* (the LIMIth+1 order must not take the place of 1st order
-			 * if 1st order is not finished) */
+			 * if 1st order is not finished) (TODO) */
             i=0;
     }
 }
