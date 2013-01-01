@@ -186,9 +186,12 @@ void* order_handling(void* incoming)
     order_list[local] = *incoming_order;
 	/* done */
 	pthread_mutex_unlock(&list_mutex);
-
+    /* summing up the amount of pizzas in the delivery */
+    sum = order_list[local].m_num + order_list[local].p_num + order_list[local].s_num;
+    if (sum > N_MAXPIZZA) 
+        fatal("Very big order");
 	/* sub-thread ids */
-    pthread_t sub_id[N_MAXPIZZA];
+    pthread_t sub_id[sum];
 	/* for pizza identification on the cook() function */
     char pizza_type = 'n';
 
