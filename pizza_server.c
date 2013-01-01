@@ -93,12 +93,10 @@ void* cook(void* pizza_type)
 
 	/* using condition variable to get the cooker */
 	pthread_mutex_lock(&cook_mutex);
-	if (cookers == 0) {
+	if (cookers == 0) 
 		pthread_cond_wait(&cook_cond, &cook_mutex);
-		/* take the cooker */
-		cookers--;
-	} else
-		cookers--;
+	/* take the cooker */
+	cookers--;
 
 	/* we have the cooker. Actually cook (wait) */
     if (*type == 'm')
@@ -187,7 +185,7 @@ void* order_handling(void* incoming)
 	/* done */
 	pthread_mutex_unlock(&list_mutex);
     /* summing up the amount of pizzas in the delivery */
-    sum = order_list[local].m_num + order_list[local].p_num + order_list[local].s_num;
+    short sum = order_list[local].m_num + order_list[local].p_num + order_list[local].s_num;
     if (sum > N_MAXPIZZA) 
         fatal("Very big order");
 	/* sub-thread ids */
