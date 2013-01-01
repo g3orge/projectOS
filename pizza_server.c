@@ -350,9 +350,11 @@ int main()
         /* required action for counter (increment or zero) */
         if (i < LIMIT)
             i++;
-        else 
-			/* (the LIMIth+1 order must not take the place of 1st order
-			 * if 1st order is not finished) (TODO) */
+        else {
             i=0;
+            while (order_list[i].exists == true)
+                i++;
+        }
+            
     }
 }
