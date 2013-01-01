@@ -81,6 +81,7 @@ void wait_function(short requested_time)
 	pthread_mutex_lock(&fake_mutex);
 	pthread_cond_timedwait(&fake_cond, &fake_mutex, &ts);
 	pthread_mutex_unlock(&fake_mutex);
+    
 }
 
 /* Thread function for cooking individual pizzas */
@@ -97,6 +98,7 @@ void* cook(void* pizza_type)
 		pthread_cond_wait(&cook_cond, &cook_mutex);
 	/* take the cooker */
 	cookers--;
+    pthread_mutex_unlock(&cook_mutex);
 
 	/* we have the cooker. Actually cook (wait) */
     if (*type == 'm')
@@ -111,8 +113,10 @@ void* cook(void* pizza_type)
     pizza_log("cooked");
 
 	/* give the cooker back */
+	pthread_mutex_lock(&cook_mutex);
 	cookers++;
 	pthread_cond_signal(&cook_cond);
+	pthread_mutex_unlock(&cook_mutex);
 
 	/* bail out to join with parent thread */
     pthread_exit(0);
@@ -241,14 +245,12 @@ void* order_handling(void* incoming)
 
 	/* get the delivery guy */
 	pthread_mutex_lock(&delivery_mutex);
-	if (delivery_guys == 0) {
+	if (delivery_guys == 0) 
 		/* if noone is available, wait */
 		pthread_cond_wait(&delivery_cond, &delivery_mutex);
-		/* take the guy */
-		delivery_guys--;
-	} else
-		/* take the guy */
-		delivery_guys--;
+	/* take the guy */
+	delivery_guys--;
+	pthread_mutex_unlock(&delivery_mutex);
 
 	/* actually delivering */
 	if (order_list[local].time == false)
@@ -258,10 +260,12 @@ void* order_handling(void* incoming)
     else
         fatal("Wrong input on delivery function");
 
+	pthread_mutex_lock(&delivery_mutex);
 	/* and give him back */
 	delivery_guys++;
 	pthread_cond_signal(&delivery_cond);
 	/* ...done */
+	pthread_mutex_unlock(&delivery_mutex);
 
     /* log time */
     gettimeofday(&end,NULL);
