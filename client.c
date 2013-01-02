@@ -123,7 +123,7 @@ order_t make_order(void)
     scanf("%d",&order.s_num);
     do {
         clear_input_buffer();
-        printf("\nWhere do you live? ( 'l' for a long distance 't' for short distance):");
+        printf("\nWhere do you live? ('l' for a long distance 's' for short distance):");
         choise = getchar();
     } while (( choise !=  'l' ) && ( choise != 's' ));
     if ( choise == 'l' )
