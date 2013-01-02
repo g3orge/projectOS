@@ -232,9 +232,13 @@ void* order_handling(void* incoming)
     order_list[local].status2 = true;
 
 	/* wait for pizzas to get ready */
-    for (j; j>0; j--) {
-        if (pthread_join(sub_id[j], NULL) != 0)
+	while (j > 0) {
+		/* return value */
+		short ret;
+		/* j-1 to bypass 0-base indexing */
+        if (pthread_join(sub_id[j-1], &ret) != 0)
             fatal("Thread failed to join");
+		j--;
     }
     
     /* set "cooked" status */
