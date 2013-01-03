@@ -339,7 +339,7 @@ int main()
 			i++;
 		else {
 			i=0;
-			while (order_list[i].exists == true)
+			while (order_list[i].exists && (i <= LIMIT))
 				i++;
 		}
 	}
