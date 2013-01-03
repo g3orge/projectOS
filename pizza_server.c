@@ -333,13 +333,15 @@ int main()
 		/* Threading */
 		if (pthread_create(&id[i], NULL, &order_handling, &incoming) != 0)
 			fatal("Failed to create basic order handling thread");
+		if (pthread_detach(id[i]) != 0)
+			fatal("Failed to create basic order handling thread");
 
 		/* required action for counter (increment or zero) */
 		if (i < LIMIT)
 			i++;
 		else {
 			i=0;
-			while (order_list[i].exists && (i <= LIMIT))
+			while (order_list[i].exists && (i < LIMIT))
 				i++;
 		}
 	}
