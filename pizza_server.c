@@ -61,29 +61,6 @@ void pizza_log(char *message)
 	fclose(fd);
 }
 
-/* The waiting function (returns nothing)
- * using "faked" condition variable and mutex around the
- * timedwait POSIX function to accomplish thread-based waiting */
-void wait_function(short requested_time)
-{
-	struct timespec ts;
-	struct timeval now;
-
-	/* get current time*/
-	gettimeofday(&now,NULL);
-
-	/* current time */
-	ts.tv_sec  = now.tv_sec;
-	ts.tv_nsec = now.tv_usec * 1000;
-	/* the actual given time */
-	ts.tv_sec += requested_time;
-
-	/* faked timed wait requires locked mutex*/
-	pthread_mutex_lock(&fake_mutex);
-	pthread_cond_timedwait(&fake_cond, &fake_mutex, &ts);
-	pthread_mutex_unlock(&fake_mutex);
-}
-
 /* Thread function for cooking individual pizzas */
 void* cook(void* pizza_type)
 {
@@ -102,11 +79,11 @@ void* cook(void* pizza_type)
 
 	/* we have the cooker. Actually cook (wait) */
 	if (*type == 'm')
-		wait_function(TIME_MARGARITA);
+		sleep(TIME_MARGARITA);
 	else if (*type == 'p')
-		wait_function(TIME_PEPPERONI);
+		sleep(TIME_PEPPERONI);
 	else if (*type == 's')
-		wait_function(TIME_SPECIAL);
+		sleep(TIME_SPECIAL);
 	else
 		fatal("Wrong input on cook function");
 
@@ -162,7 +139,7 @@ void* coca_cola(void* arg)
 			} /* first 'if' closes here */
 		}
 		/* wait between the checks */
-		wait_function(T_VERYLONG);
+		sleep(T_VERYLONG);
 	}
 }
 
@@ -260,10 +237,11 @@ void* order_handling(void* incoming)
 	pthread_mutex_unlock(&delivery_mutex);
 
 	/* actually delivering */
+	/* using regular sleep() function since it works fine thread-based */
 	if (order_list[local].time == false)
-		wait_function(T_KONTA);
+		sleep(T_KONTA);
 	else if (order_list[local].time == true)
-		wait_function(T_MAKRIA);
+		sleep(T_MAKRIA);
 	else
 		fatal("Wrong input on delivery function");
 
