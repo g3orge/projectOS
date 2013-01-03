@@ -41,6 +41,5 @@ typedef struct {
     int start_sec;
     int start_usec;
 	/* we need an order id */
-	/* maybe long if we add some clever handling (see end of main file) */
-	int myid;
+	pthread_t myid;
 } order_t;

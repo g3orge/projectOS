@@ -56,7 +56,8 @@ void pizza_log(char *message)
 	time_t raw_time;
 	time(&raw_time);
 	fd = fopen("logfile", "a");
-	fprintf(fd, "[%d] --- %s --- %s", (int)getpid(), message, ctime(&raw_time));
+	fprintf(fd, "[%d] --- %s --- %s",
+				pthread_self(), message, ctime(&raw_time));
 	fclose(fd);
 }
 
@@ -152,8 +153,7 @@ void* coca_cola(void* arg)
 					/* TODO: Report delay to client? */
 					FILE *coke;
 					coke = fopen("coke", "a");
-					fprintf(coke,"### coca cola for [%d] order. Elapsed time:\
-							(%ld seconds and %ld microseconds)\n",
+					fprintf(coke,"### coca cola for [%d] order. Elapsed time: %ld seconds and %ld microseconds\n",
 							order_list[k].myid,
 							(test.tv_sec - temp_sec),
 							(test.tv_usec - temp_usec));
@@ -185,8 +185,12 @@ void* order_handling(void* incoming)
 	while (order_list[local].exists == true)
 		local++;
 	order_list[local] = *incoming_order;
-	/* done */
 	pthread_mutex_unlock(&list_mutex);
+	/* done */
+
+	/* order id */
+	order_list[local].myid = pthread_self();
+
 	/* summing up the amount of pizzas in the delivery */
 	short sum = order_list[local].m_num + order_list[local].p_num + order_list[local].s_num;
 	if (sum > N_MAXPIZZA) 
@@ -267,15 +271,17 @@ void* order_handling(void* incoming)
 	/* and give him back */
 	delivery_guys++;
 	pthread_cond_signal(&delivery_cond);
-	/* ...done */
 	pthread_mutex_unlock(&delivery_mutex);
+	/* ...done */
 
 	/* log time */
 	gettimeofday(&end,NULL);
 	FILE *fd;
 	fd = fopen("logfile", "a");
-	fprintf(fd, "[%d] -^- elapsed time: %ld seconds and %ld microseconds \n",
-		  getpid(), (end.tv_sec -begin.tv_sec ),(end.tv_usec - begin.tv_usec));
+	fprintf(fd,"[%d] -^- Done. elapsed time: %ld seconds and %ld microseconds\n",
+				pthread_self(),
+				(end.tv_sec - begin.tv_sec),
+				(end.tv_usec - begin.tv_usec));
 	fclose(fd);
 
 	/* delete the order */

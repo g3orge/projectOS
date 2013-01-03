@@ -12,6 +12,7 @@ FLAGS=-pthread
 all: server client
 	-@echo "cleaning logfile..."
 	-@echo > logfile
+	-@echo > coke
 
 server: pizza_server.c pizza.h
 	$(COMP) $(WARN) pizza_server.c -o server $(FLAGS)
