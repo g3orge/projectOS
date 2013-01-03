@@ -1,3 +1,171 @@
+commit 663bac4ea2effd5da5e68c706c23a82b1d76d82d
+Author: Gryllos Prokopis <gryllosprokopis@gmail.com>
+Date:   Thu Jan 3 21:12:41 2013 +0200
+
+    more debugging
+
+commit de0429889b627a56129930a3f9c86f6176655ddf
+Author: Gryllos Prokopis <gryllosprokopis@gmail.com>
+Date:   Thu Jan 3 19:59:53 2013 +0200
+
+    fixing overflow crash
+
+commit 99842d0156b7feba09a10324ab6acd70d4115524
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Thu Jan 3 19:39:08 2013 +0200
+
+    change the wait method to regular sleep()
+
+commit 5aa5d9fde82598e12bbb80df19693157de1f83c6
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Thu Jan 3 19:00:19 2013 +0200
+
+    logs now display the thread id
+    
+    -also cleaning coke file
+    -and adding correct pthread id inside order struct
+
+commit 233e89823a7c49e4c87d882494eb60cb56783561
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Wed Jan 2 23:56:17 2013 +0200
+
+    ignore coke file
+
+commit 84470f3db894b0a277271136f23cb3a7eddaafd5
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Wed Jan 2 23:55:41 2013 +0200
+
+    convert spaces to tabs (style)
+
+commit 6a7d3bbe5b37256b7aa474688c3a5c5255aaadf5
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Wed Jan 2 22:52:32 2013 +0200
+
+    nasty well hidden off-by-one error discovered
+    
+    -also return value
+
+commit e8bc3b74e9ee60acbd05962c348b581b0f17af72
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Wed Jan 2 21:56:06 2013 +0200
+
+    typo in client
+
+commit 6cfc0a830cbc88c1dba497c167ed9a82910cd5fc
+Author: Gryllos Prokopis <gryllosprokopis@gmail.com>
+Date:   Tue Jan 1 23:25:05 2013 +0200
+
+    restriction for incoming orders added
+    
+    -removed TODO
+
+commit 39ce3845352b9580db1c90986b0398c5516625a6
+Author: Gryllos Prokopis <gryllosprokopis@gmail.com>
+Date:   Tue Jan 1 22:27:51 2013 +0200
+
+    fixing mutexes and exclusion bugs
+
+commit f69ea31d4fec861b4da267d73ca962df37392c05
+Author: Gryllos Prokopis <gryllosprokopis@gmail.com>
+Date:   Tue Jan 1 21:37:45 2013 +0200
+
+    minor code fixes
+
+commit 6d580880c412d79d12e161b4fd67663cb985d27d
+Author: Gryllos Prokopis <gryllosprokopis@gmail.com>
+Date:   Tue Jan 1 17:50:20 2013 +0200
+
+    Minor fixes
+    
+    -summing up pizzas
+    -fixing sub_thread ids
+
+commit c0f204221226ae67c0b539de23bcc6aa1ee22b25
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Mon Dec 31 19:00:49 2012 +0200
+
+    makefile and readme changes
+
+commit eb14de54730ec3f6c55bf139384c111e1829b818
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Mon Dec 31 15:16:34 2012 +0200
+
+    remove unnecessary library - style fixes
+
+commit 1fc6d33584ab62c99abc0842974493cd17728adf
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Mon Dec 31 15:09:45 2012 +0200
+
+    change function name to pizza_log
+
+commit fa1fd42b3612d262170e8295823f2a52aeca8fc8
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Mon Dec 31 15:03:10 2012 +0200
+
+    fixing compiling errors
+    
+    -undeclared
+    -const variables
+    -re-arrange functions
+    etc...
+
+commit 1879e8efd77ae342cd9bf124c32b4f9fc48c3191
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Sun Dec 30 19:33:49 2012 +0200
+
+    actual coca_cola work (re-implementation)
+    
+    -coca_cola function re-implementation
+    -make guys counter constants
+    -myid variable in order struct
+    -remove semaphore directives (were still in there)
+
+commit 54951b07b09b23a661e87cd9ab13e46385377296
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Sun Dec 30 19:03:40 2012 +0200
+
+    cleaning-wait to one more place
+
+commit 4f278f7c9769e84133c27effaeae6d10fb6d0a4d
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Sun Dec 30 17:02:46 2012 +0200
+
+    implement wait function for timed operations
+    
+    -convert delivery function to wait_function which is being used
+            by all the 'wait' operations.
+            Implemented with "faked" conds and mutexes
+    -cond_wait requires locked mutex (added)
+    -functions code guideline changes
+
+commit 672c1991a2e59058b41de87277246bfe247dac0a
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Sun Dec 30 16:25:54 2012 +0200
+
+    actual work with the mutex and conds around jobs
+    
+    -mutex around list empty position finder
+    -mutex-cond-counter around cooking-delivering
+    -some cleaning
+    
+    ===
+    while(exist==true) at the coca-cola handler is plain wrong
+    need whole different implementation
+
+commit 64655b7e3dcaa6472d59d16028ca2e7a67443b82
+Author: George Papanikolaou <g3orge.app@gmail.com>
+Date:   Wed Dec 19 23:35:25 2012 +0200
+
+    A lot of cleaning and some actual work (...)
+    
+    -cleaning Changelog for the new Project
+    -optimized Makefile
+    -cleaning README (need more 'actual' changes based on
+            the thread implementation and the differences
+    -changing header and default times (pizza.h)
+    -starting with delivery work
+    -wrap pthread_create functions with error checking code
+
 commit 7fb3399b94036682cfb6b5c84837f43b9766eb4a
 Author: Gryllos Prokopis <gryllosprokopis@gmail.com>
 Date:   Mon Dec 17 22:19:45 2012 +0200
