@@ -21,11 +21,11 @@ There is ABSOLUTELY NO WARRANTY
 
 ----------
 Project files  
-    * pizza_server.c
-    * client.c
-    * pizza.h (Header file)
-    * Makefile
-    * run_tests.sh (Bash script)
+    * pizza_server.c  
+    * client.c  
+    * pizza.h (Header file)  
+    * Makefile  
+    * run_tests.sh (Bash script)  
 
 ----------   
 

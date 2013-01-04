@@ -121,13 +121,10 @@ void* coca_cola(void* arg)
 			/* the order has to exists */
 			if (order_list[k].exists == true) {
 				int temp_sec = order_list[k].start_sec;
-				int temp_usec = order_list[k].start_usec;
 				/* substracting the internal order time (temp variables) from
 				 * the current time to find the elapsed time per order */
-				if ((test.tv_sec - temp_sec) * 1000000 +
-					(test.tv_usec - temp_usec) >= T_VERYLONG) {
+				if ((test.tv_sec - temp_sec) > T_VERYLONG) {
 					/* delayed order found. Log it */
-					/* TODO: Report delay to client? */
 					FILE *coke;
 					coke = fopen("coke", "a");
 					fprintf(coke,"### coca cola for [%d] order. Elapsed time: %ld seconds and %ld microseconds\n",
