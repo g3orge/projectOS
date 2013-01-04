@@ -1,6 +1,8 @@
 Λειτουργικά Συστήματα Ι - 2012    
 Άσκηση 2
 
+Παρασκευή 04/01/2013
+
 ----------
 Γεώργιος Παπανικολάου - Α.Μ.: 5044    
 Προκόπης Γρύλλος - Α.Μ.: 4975
@@ -18,11 +20,12 @@ Project hosted on http://github.com/Nacho-Libre/projectOS/tree/threads
 There is ABSOLUTELY NO WARRANTY
 
 ----------
-project files
+Project files  
     * pizza_server.c
     * client.c
-    * pizza.h
+    * pizza.h (Header file)
     * Makefile
+    * run_tests.sh (Bash script)
 
 ----------   
 
@@ -58,8 +61,10 @@ Xρησιμοποιήσαμε condition variables της δομής pthread_cond
 
 ----------
 
-Γνωστά Προβλήματα:
-    *Mερικές φορές είναι πιθανή η ανικανότητα του προγράμματος για δημιουργία περισσότερων threads, σε αυτη τη περίπτωση ο server τερματίζει τη λειτουργία του και μαζί του κλείνουν όλα τα ανοιχτά απο αυτόν threads
+Γνωστά Προβλήματα:  
 
-    *Προτιμήθηκε η χρήση της συνάρτησης sleep() αντι της pthread_timedwait(), μπορείτε να βρείτε την υλοποιήση μας με χρήση της timedwait εδω
+*Mερικές φορές είναι πιθανή η ανικανότητα του προγράμματος για δημιουργία περισσότερων threads (λόγο του λειτουργικού συστήματος ή του υπολογιστή), σε αυτη τη περίπτωση ο server τερματίζει τη λειτουργία του και μαζί του κλείνουν όλα τα ανοιχτά απο αυτόν threads
+
+*Προτιμήθηκε η χρήση της συνάρτησης sleep() αντι της pthread_timedwait(), μπορείτε να βρείτε την υλοποιήση μας με χρήση της timedwait [εδω](http://github.com/Nacho-Libre/projectOS/blob/threads-wait-func/pizza_server.c)  
+
 ----------

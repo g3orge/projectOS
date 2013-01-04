@@ -244,7 +244,8 @@ void* order_handling(void* incoming)
 		sleep(T_MAKRIA);
 	else
 		fatal("Wrong input on delivery function");
-    pizzalog("Delivered");
+
+	pizzalog("Delivered");
 
 	pthread_mutex_lock(&delivery_mutex);
 	/* and give him back */
@@ -252,7 +253,7 @@ void* order_handling(void* incoming)
 	pthread_cond_signal(&delivery_cond);
 	pthread_mutex_unlock(&delivery_mutex);
 	/* ...done */
-    
+
 	/* log time */
 	gettimeofday(&end,NULL);
 	FILE *fd;
