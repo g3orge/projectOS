@@ -127,10 +127,9 @@ void* coca_cola(void* arg)
 					/* delayed order found. Log it */
 					FILE *coke;
 					coke = fopen("coke", "a");
-					fprintf(coke,"### coca cola for [%d] order. Elapsed time: %ld seconds and %ld microseconds\n",
+					fprintf(coke,"### coca cola for [%d] order. Elapsed time: %ld seconds\n",
 							order_list[k].myid,
-							(test.tv_sec - temp_sec),
-							(test.tv_usec - temp_usec));
+							(test.tv_sec - temp_sec));
 					fclose(coke);
 				}
 			} /* first 'if' closes here */
@@ -148,9 +147,9 @@ void* order_handling(void* incoming)
 	gettimeofday(&begin, NULL);
 	/* required typecast */
 	order_t* incoming_order = (order_t*)(incoming);
-	/* initialization for the coca cola process */
+
+	/* time initialization for the coca cola process */
 	incoming_order->start_sec = begin.tv_sec;
-	incoming_order->start_usec = begin.tv_usec;
 
 	/* Try to find a place in the order_list array */
 	short local = 0;
@@ -255,10 +254,9 @@ void* order_handling(void* incoming)
 	gettimeofday(&end,NULL);
 	FILE *fd;
 	fd = fopen("logfile", "a");
-	fprintf(fd,"[%d] -^- Done. elapsed time: %ld seconds and %ld microseconds\n",
+	fprintf(fd,"[%d] -^- Done. elapsed time: %ld seconds\n",
 				pthread_self(),
-				(end.tv_sec - begin.tv_sec),
-				(end.tv_usec - begin.tv_usec));
+				(end.tv_sec - begin.tv_sec));
 	fclose(fd);
 
 	/* delete the order */

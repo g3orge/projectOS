@@ -39,7 +39,6 @@ typedef struct {
     bool status2;
     /* time variables */
     int start_sec;
-    int start_usec;
 	/* we need an order id */
 	pthread_t myid;
 } order_t;
