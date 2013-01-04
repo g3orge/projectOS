@@ -242,7 +242,7 @@ void* order_handling(void* incoming)
 	else
 		fatal("Wrong input on delivery function");
 
-	pizzalog("Delivered");
+	pizza_log("Delivered");
 
 	pthread_mutex_lock(&delivery_mutex);
 	/* and give him back */
