@@ -30,3 +30,5 @@ kill:
 	-@pgrep -u `whoami` server | wc -l
 	-@echo "Killing them..."
 	-@pgrep -u `whoami` server | xargs kill
+
+.PHONY: clean

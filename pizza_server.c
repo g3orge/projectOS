@@ -50,6 +50,7 @@ void log(char *message) {
 
 void zombiehandler(int sig_num) {
     /* The SIGCHLD handler to reap zombies */
+    signal(SIGCHLD, zombiehandler);
     int status;
     wait(&status);
 }
